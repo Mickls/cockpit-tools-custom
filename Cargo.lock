@@ -1025,6 +1025,8 @@ dependencies = [
  "futures",
  "futures-util",
  "h2",
+ "hkdf",
+ "hmac",
  "http-body-util",
  "hyper",
  "hyper-util",
@@ -1099,6 +1101,7 @@ dependencies = [
  "windows 0.58.0",
  "wry",
  "yawc",
+ "zeroize",
  "zip",
  "zstd",
 ]

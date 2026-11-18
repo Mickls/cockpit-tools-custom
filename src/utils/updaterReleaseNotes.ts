@@ -1,7 +1,7 @@
 const ZH_SECTION_HEADER = '## 更新日志（中文）';
 const EN_SECTION_HEADER = '## Changelog (English)';
 const GITHUB_RELEASE_TAG_BASE_URL =
-  'https://github.com/jlcodes99/cockpit-tools/releases/tag/v';
+  'https://github.com/Mickls/cockpit-tools-custom/releases/tag/v';
 const RELEASE_HIGHLIGHTS: Record<string, { zh: string; en: string }> = {
   '1.3.1': {
     zh: `### 重要更新
@@ -66,27 +66,34 @@ export function parseUpdaterReleaseNotes(notes?: string): ParsedUpdaterReleaseNo
   const enIndex = normalized.indexOf(EN_SECTION_HEADER);
 
   if (zhIndex >= 0 && enIndex >= 0) {
+    const prefix = normalized.slice(0, Math.min(zhIndex, enIndex));
+    const custom = prefix.startsWith('## 定制更新\n')
+      ? prefix.split(/^## 官方更新\s*$/m)[0].trim()
+      : '';
+    const withCustom = (part: string, heading: string) => {
+      const official = part.trim().replace(/\s*<\/details>$/, '').trim();
+      return custom ? `${custom}\n\n## ${heading}\n\n${official}` : part.trim();
+    };
     if (zhIndex < enIndex) {
       return {
-        releaseNotesZh: normalized
-          .slice(zhIndex + ZH_SECTION_HEADER.length, enIndex)
-          .trim(),
-        releaseNotes: normalized.slice(enIndex + EN_SECTION_HEADER.length).trim(),
+        releaseNotesZh: withCustom(normalized.slice(zhIndex + ZH_SECTION_HEADER.length, enIndex), '官方更新'),
+        releaseNotes: withCustom(normalized.slice(enIndex + EN_SECTION_HEADER.length), 'Upstream updates'),
       };
     }
 
     return {
-      releaseNotes: normalized
-        .slice(enIndex + EN_SECTION_HEADER.length, zhIndex)
-        .trim(),
-      releaseNotesZh: normalized.slice(zhIndex + ZH_SECTION_HEADER.length).trim(),
+      releaseNotes: withCustom(normalized.slice(enIndex + EN_SECTION_HEADER.length, zhIndex), 'Upstream updates'),
+      releaseNotesZh: withCustom(normalized.slice(zhIndex + ZH_SECTION_HEADER.length), '官方更新'),
     };
   }
 
   // 没有中英文分段时，直接复用同一份说明。
+  const plain = normalized.startsWith('## 定制更新\n')
+    ? normalized.replace(/\n<details>\n<summary>查看官方更新说明<\/summary>\n/, '\n').replace(/\s*<\/details>$/, '').trim()
+    : normalized;
   return {
-    releaseNotes: normalized,
-    releaseNotesZh: normalized,
+    releaseNotes: plain,
+    releaseNotesZh: plain,
   };
 }
 
@@ -134,7 +141,7 @@ export function resolveUpdaterDownloadUrl(
 
   const safeVersion = version.trim();
   if (!safeVersion) {
-    return 'https://github.com/jlcodes99/cockpit-tools/releases/latest';
+    return 'https://github.com/Mickls/cockpit-tools-custom/releases/latest';
   }
   return `${GITHUB_RELEASE_TAG_BASE_URL}${encodeURIComponent(safeVersion)}`;
 }

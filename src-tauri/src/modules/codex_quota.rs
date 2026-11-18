@@ -1948,7 +1948,14 @@ async fn refresh_account_quota_with_runtime_snapshot(
         "quota_refresh_flow_start",
         serde_json::json!({"account_id": account_id}),
     );
-    let result = refresh_account_quota_once(account_id, runtime_snapshot).await;
+    let mut result = refresh_account_quota_once(account_id, runtime_snapshot).await;
+    if let Err(error) = &result {
+        if Box::pin(crate::modules::codex_credential_sync::recover_if_authorized_failure(account_id, error)).await {
+            if let Some(recovered) = codex_account::load_account(account_id) {
+                result = Box::pin(refresh_freshly_authorized_account_quota(account_id, recovered.token_generation)).await;
+            }
+        }
+    }
     crate::modules::codex_auth_diagnostic::log_event(
         "quota_refresh_flow_finished",
         serde_json::json!({
@@ -1994,6 +2001,13 @@ pub(crate) async fn refresh_active_account_quota(
     };
     let sync_started = std::time::Instant::now();
     let mut result = refresh_account_quota_once(account_id, &runtime).await;
+    if let Err(error) = &result {
+        if Box::pin(crate::modules::codex_credential_sync::recover_if_authorized_failure(account_id, error)).await {
+            if let Some(recovered) = codex_account::load_account(account_id) {
+                result = Box::pin(refresh_freshly_authorized_account_quota(account_id, recovered.token_generation)).await;
+            }
+        }
+    }
     if result.is_ok() && !crate::modules::codex_quota_sync::observed_since(account_id, sync_started) {
         // Ownership deferral returns cached quota for existing manual callers.
         // The activity worker must back off instead of treating it as a new GET.

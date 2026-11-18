@@ -112,10 +112,10 @@
       }
     },
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxRkU1RTdBRDdCRUUzM0QKUldROTQ3N1hlbDcrd1ZVQ2E3b1ZoVUdXL3BWQmpjdzNnWllNUW1LNHVwcE9wdGI1Q1UxQmdnQ0oK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJGNDM2QUJDRDI5REM4NjcKUldSbnlKM1N2R3BETDhwakZVVFBXMU54a1UrSnNadzhNZjE4dUQ5d3hRVlJmV3JVTEdVL3FOWlMK",
       "endpoints": [
-        "https://github.com/jlcodes99/cockpit-tools/releases/latest/download/latest-{{target}}.json",
-        "https://github.com/jlcodes99/cockpit-tools/releases/latest/download/latest.json"
+        "https://github.com/Mickls/cockpit-tools-custom/releases/latest/download/latest-{{target}}.json",
+        "https://github.com/Mickls/cockpit-tools-custom/releases/latest/download/latest.json"
       ]
     }
   }

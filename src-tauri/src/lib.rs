@@ -608,6 +608,7 @@ pub fn run() {
             });
 
             tauri::async_runtime::spawn(modules::codex_proxy_catalog::auto_refresh_loop());
+            modules::codex_credential_sync::start_worker();
             tauri::async_runtime::spawn(commands::account::auto_refresh::run(app.handle().clone()));
             modules::codex_reset_automation::schedule_migration();
             tauri::async_runtime::spawn(modules::codex_subscription_refresh::run());
@@ -945,6 +946,21 @@ pub fn run() {
             modules::codex_pelican_preview::codex_pelican_preview,
             modules::codex_pelican_preview::codex_pelican_browser,
             // Account Commands
+            commands::codex_credential_sync::codex_credential_sync_load,
+            commands::codex_credential_sync::codex_credential_sync_save,
+            commands::codex_credential_sync::codex_credential_sync_device_public_key,
+            commands::codex_credential_sync::codex_credential_sync_enroll,
+            commands::codex_credential_sync::codex_credential_sync_manual_upload,
+            commands::codex_credential_sync::codex_credential_sync_manual_sync,
+            commands::codex_credential_sync::codex_credential_sync_long_pairing,
+            commands::codex_credential_sync::codex_credential_sync_create_invite,
+            commands::codex_credential_sync::codex_credential_sync_list_pairings,
+            commands::codex_credential_sync::codex_credential_sync_approve_pairing,
+            commands::codex_credential_sync::codex_credential_sync_devices,
+            commands::codex_credential_sync::codex_credential_sync_revoke,
+            commands::codex_credential_sync::codex_credential_sync_accounts,
+            commands::codex_credential_sync::codex_credential_sync_export_recovery,
+            commands::codex_credential_sync::codex_credential_sync_restore_recovery,
             commands::account::list_accounts,
             commands::account::add_account,
             commands::account::create_pending_oauth_account,
