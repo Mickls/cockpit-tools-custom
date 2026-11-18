@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { composeNotes } = require('./custom-notes.cjs');
+const { composeNotes, hasUpstreamUpdate } = require('./custom-notes.cjs');
 
 test('release notes use official notes when no custom fragment changed', () => {
   assert.equal(composeNotes([], 'official release body'), 'official release body');
@@ -13,8 +13,13 @@ test('release notes put custom changes first and official notes below', () => {
   assert.ok(notes.indexOf('custom change one') < notes.indexOf('official release body'));
   assert.match(notes, /查看官方更新说明/);
 });
-test('release notes reject an empty official body', () => {
-  assert.throws(() => composeNotes(['custom'], '  '), /Official release notes/);
+test('an unchanged upstream baseline does not repeat its release notes', () => {
+  const previous = { upstreamCommit: 'a'.repeat(40), upstreamVersion: '1.4.0' };
+  assert.equal(hasUpstreamUpdate(previous, { ...previous, version: '2.0.1295' }), false);
+  assert.equal(hasUpstreamUpdate(previous, { ...previous, upstreamCommit: 'b'.repeat(40) }), true);
+  assert.equal(hasUpstreamUpdate(null, previous), true);
+  assert.equal(composeNotes(['custom'], '  ').trim(), '## 定制更新\n\ncustom');
+  assert.doesNotMatch(composeNotes([]), /官方更新/);
 });
 
 const crypto = require('node:crypto');
