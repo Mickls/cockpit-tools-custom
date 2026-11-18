@@ -6568,6 +6568,14 @@
       "officialUnavailable": "此帳號不支援官方重設歷史"
     },
     "credentialSync": {
+      "longCode": "取得長期配對碼",
+      "replaceCode": "更換配對碼",
+      "confirmReplace": "確認更換（舊碼將失效）",
+      "showCode": "查看配對碼",
+      "hideCode": "隱藏配對碼",
+      "advanced": "進階操作",
+      "recoverInvalid": "復原授權異常帳號",
+      "unsupported": "此帳號無法使用憑證同步",
       "title": "Codex 憑證同步",
       "desc": "個人多裝置授權復原；伺服器只儲存加密資料。一般 Token 更新不會上傳。",
       "pending": "待上傳帳號：{{count}}",

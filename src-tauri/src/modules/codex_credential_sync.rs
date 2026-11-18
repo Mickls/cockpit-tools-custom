@@ -9,6 +9,7 @@ use std::{fs,path::PathBuf,sync::Mutex};
 #[path="credential_sync/sdk.rs"]mod sdk;
 #[path="credential_sync/worker.rs"]mod worker;
 pub use sdk::{register as enroll,invite,pairings,approve,finish_pairing,devices,revoke,export_recovery,restore_recovery};
+pub use sdk::manage_long_pairing;
 pub use worker::{start_worker,manual_upload,manual_sync,recover_if_authorized_failure};
 static SETTINGS_LOCK:Mutex<()>=Mutex::new(());
 static DEVICE_LOCK:Mutex<()>=Mutex::new(());

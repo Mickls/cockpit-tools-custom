@@ -44,6 +44,17 @@ pub async fn recover_enrollment(server:&str,body:Value)->Result<Value,String>{
  if response.content_length().is_some_and(|n|n>131072){return Err("恢复响应超过大小限制".into());}
  response.json().await.map_err(|_|"恢复登记响应无效".into())
 }
+pub async fn pairing_request(server:&str,path:&str,body:Value)->Result<Value,String>{
+ let mut response=client(server)?.post(format!("{server}{path}")).json(&body).send().await.map_err(|_|"配对服务连接失败")?;
+ let status=response.status();
+ if !status.is_success(){return Err(if status.as_u16()==401{"配对码无效或已更换".into()}else{format!("配对服务返回 HTTP {}",status.as_u16())});}
+ let mut bytes=Vec::new();
+ while let Some(chunk)=response.chunk().await.map_err(|_|"配对响应读取失败")?{
+  if bytes.len()+chunk.len()>65536{return Err("配对响应超过大小限制".into());}
+  bytes.extend(chunk);
+ }
+ serde_json::from_slice(&bytes).map_err(|_|"配对响应格式无效".into())
+}
 
 fn diagnostic(error:&reqwest::Error)->String{
  use std::error::Error;

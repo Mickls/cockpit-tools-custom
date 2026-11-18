@@ -6810,6 +6810,14 @@
       "officialUnavailable": "此账号不支持官方重置历史"
     },
     "credentialSync": {
+      "longCode": "获取长期配对码",
+      "replaceCode": "更换配对码",
+      "confirmReplace": "确认更换（旧码将失效）",
+      "showCode": "查看配对码",
+      "hideCode": "隐藏配对码",
+      "advanced": "高级操作",
+      "recoverInvalid": "恢复异常账号",
+      "unsupported": "此账号无法使用凭据同步",
       "title": "Codex 凭据同步",
       "desc": "个人多设备授权恢复；服务器只保存加密数据。普通 Token 刷新不会上传。",
       "pending": "待上传账号：{{count}}",

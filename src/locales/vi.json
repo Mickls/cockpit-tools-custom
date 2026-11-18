@@ -6568,6 +6568,14 @@
       "officialUnavailable": "Tài khoản này không hỗ trợ lịch sử đặt lại chính thức"
     },
     "credentialSync": {
+      "longCode": "Lấy mã ghép nối",
+      "replaceCode": "Thay mã ghép nối",
+      "confirmReplace": "Xác nhận thay mã (mã cũ sẽ hết hiệu lực)",
+      "showCode": "Hiện mã ghép nối",
+      "hideCode": "Ẩn mã ghép nối",
+      "advanced": "Tùy chọn nâng cao",
+      "recoverInvalid": "Khôi phục tài khoản bị lỗi xác thực",
+      "unsupported": "Tài khoản này không hỗ trợ đồng bộ thông tin xác thực",
       "title": "Đồng bộ thông tin xác thực Codex",
       "desc": "Khôi phục quyền truy cập giữa các thiết bị cá nhân. Máy chủ chỉ lưu dữ liệu mã hóa; các lần làm mới token thông thường không được tải lên.",
       "pending": "Tải lên đang chờ: {{count}}",

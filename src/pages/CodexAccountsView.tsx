@@ -1,4 +1,6 @@
 import { CodexDeviceRestrictions } from "../components/codex/CodexDeviceRestrictions";
+import { CodexCredentialSyncActions } from "../components/codex/CodexCredentialSyncActions";
+import { subscribeTauriEvent } from "../utils/tauriEventListener";
 import { resolveCodexAccountDisplayName } from "../utils/codexAccountDisplayName";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -44,6 +46,10 @@ export type CodexAccountsViewProps = ReturnType<typeof useCodexAccountsPageContr
 
 /** 渲染 CodexAccountsPage 的界面；业务状态与动作统一由 Controller 提供。 */
 export function CodexAccountsView(props: CodexAccountsViewProps) {
+  const refreshRecoveredAccounts = props.fetchAccounts;
+  useEffect(() => subscribeTauriEvent('codex:credential-recovered', () => {
+    void refreshRecoveredAccounts();
+  }), [refreshRecoveredAccounts]);
   const {
     accounts,
     activeBatchImportCheckQuota,
@@ -242,6 +248,11 @@ export function CodexAccountsView(props: CodexAccountsViewProps) {
       />
 
       {activeTab === "overview" && <CodexDeviceRestrictions accounts={accounts} maskAccountText={maskAccountText} />}
+      {activeTab === "overview" && <CodexCredentialSyncActions
+        accounts={accounts}
+        displayName={account => maskAccountText(resolveCodexAccountDisplayName(account))}
+        refresh={fetchAccounts}
+      />}
 
       {storageError && (
         <div className="codex-top-layout-save-error" role="alert">

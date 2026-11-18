@@ -6810,6 +6810,14 @@
       "officialUnavailable": "Official reset history is unavailable for this account"
     },
     "credentialSync": {
+      "longCode": "Get pairing code",
+      "replaceCode": "Replace pairing code",
+      "confirmReplace": "Confirm replacement (the old code will expire)",
+      "showCode": "Show pairing code",
+      "hideCode": "Hide pairing code",
+      "advanced": "Advanced options",
+      "recoverInvalid": "Recover accounts with authorization errors",
+      "unsupported": "This account cannot use credential sync",
       "title": "Codex credential sync",
       "desc": "Recover authorization across your devices. The server stores encrypted data only; routine token refreshes are not uploaded.",
       "pending": "Pending uploads: {{count}}",

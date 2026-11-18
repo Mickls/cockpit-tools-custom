@@ -929,6 +929,7 @@ pub fn run() {
             commands::codex_credential_sync::codex_credential_sync_enroll,
             commands::codex_credential_sync::codex_credential_sync_manual_upload,
             commands::codex_credential_sync::codex_credential_sync_manual_sync,
+            commands::codex_credential_sync::codex_credential_sync_long_pairing,
             commands::codex_credential_sync::codex_credential_sync_create_invite,
             commands::codex_credential_sync::codex_credential_sync_list_pairings,
             commands::codex_credential_sync::codex_credential_sync_approve_pairing,

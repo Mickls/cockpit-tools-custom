@@ -6568,6 +6568,14 @@
       "officialUnavailable": "Oficjalna historia resetów jest niedostępna dla tego konta"
     },
     "credentialSync": {
+      "longCode": "Pobierz kod parowania",
+      "replaceCode": "Zmień kod parowania",
+      "confirmReplace": "Potwierdź zmianę (stary kod straci ważność)",
+      "showCode": "Pokaż kod parowania",
+      "hideCode": "Ukryj kod parowania",
+      "advanced": "Opcje zaawansowane",
+      "recoverInvalid": "Odzyskaj konta z błędami autoryzacji",
+      "unsupported": "To konto nie obsługuje synchronizacji poświadczeń",
       "title": "Synchronizacja danych logowania Codex",
       "desc": "Przywracaj autoryzację na swoich urządzeniach. Serwer przechowuje tylko zaszyfrowane dane; zwykłe odświeżenia tokenów nie są wysyłane.",
       "pending": "Oczekujące wysyłanie: {{count}}",

@@ -6615,6 +6615,14 @@
       "officialUnavailable": "Riwayat reset resmi tidak tersedia untuk akun ini"
     },
     "credentialSync": {
+      "longCode": "Dapatkan kode penyandingan",
+      "replaceCode": "Ganti kode penyandingan",
+      "confirmReplace": "Konfirmasi penggantian (kode lama tidak berlaku)",
+      "showCode": "Tampilkan kode penyandingan",
+      "hideCode": "Sembunyikan kode penyandingan",
+      "advanced": "Opsi lanjutan",
+      "recoverInvalid": "Pulihkan akun dengan kesalahan otorisasi",
+      "unsupported": "Akun ini tidak dapat menggunakan sinkronisasi kredensial",
       "title": "Sinkronisasi kredensial Codex",
       "desc": "Pulihkan otorisasi di perangkat pribadi Anda. Server hanya menyimpan data terenkripsi; pembaruan token rutin tidak diunggah.",
       "pending": "Unggahan tertunda: {{count}}",

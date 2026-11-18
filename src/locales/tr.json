@@ -6568,6 +6568,14 @@
       "officialUnavailable": "Bu hesap için resmî sıfırlama geçmişi kullanılamıyor"
     },
     "credentialSync": {
+      "longCode": "Eşleştirme kodu al",
+      "replaceCode": "Eşleştirme kodunu değiştir",
+      "confirmReplace": "Değişikliği onayla (eski kod geçersiz olacak)",
+      "showCode": "Eşleştirme kodunu göster",
+      "hideCode": "Eşleştirme kodunu gizle",
+      "advanced": "Gelişmiş seçenekler",
+      "recoverInvalid": "Yetkilendirme hatası olan hesapları kurtar",
+      "unsupported": "Bu hesap kimlik bilgisi eşitlemeyi kullanamaz",
       "title": "Codex kimlik bilgisi eşitleme",
       "desc": "Kişisel cihazlarınız arasında yetkilendirmeyi kurtarın. Sunucu yalnızca şifrelenmiş veri saklar; normal token yenilemeleri yüklenmez.",
       "pending": "Bekleyen yüklemeler: {{count}}",
