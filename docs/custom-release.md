@@ -1,6 +1,6 @@
 # 构建与发布
 
-在 GitHub 的 **Actions → Desktop Release → Run workflow** 中选择 `custom`，或运行 `gh workflow run custom-release.yml --repo Mickls/cockpit-tools-custom --ref custom`。工作流针对准确提交生成 Windows x64、Linux x64、macOS arm64 安装包；PR、推送和定时器均不会触发工作流。
+在 GitHub 的 **Actions → Desktop Release → Run workflow** 中选择 `custom`，或运行 `gh workflow run custom-release.yml --repo Mickls/cockpit-tools-custom --ref custom`。工作流先检查该提交是否已包含官方最新正式版，再生成 Windows x64、Linux x64、macOS arm64 安装包。推送只触发上游检查，发布仍由维护者手动触发。
 
 ## 签名策略
 
@@ -20,4 +20,4 @@
 
 ## 更新说明
 
-定制发布说明维护在 `release-notes/custom/*.md`，每项变更新增独立文件。从上一次公开 Release 到当前提交有新增或修改的说明时，定制内容置于首位，官方更新说明折叠附后；没有定制说明变化时直接沿用对应官方版本正文。官方版本和说明按上游基线固定，不随构建期间的官方最新版本漂移。
+定制发布说明维护在 `release-notes/custom/*.md`，每项变更新增独立文件。从上一次公开 Release 到当前提交有新增或修改的说明时，定制内容置于首位。只有首次发布或官方基线相对上一版发生变化时，才加入对应基线的官方更新；两类都有时，GitHub 发布页将官方更新折叠附后。官方基线不变时，客户端弹窗和发布页只显示本次定制改动。

@@ -1,0 +1,27 @@
+name: Check official upstream
+
+on:
+  push:
+    branches: [custom]
+  workflow_dispatch: {}
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    if: github.repository == 'Mickls/cockpit-tools-custom' && github.ref == 'refs/heads/custom'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare an upstream PR when needed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/check-official-upstream.cjs sync
