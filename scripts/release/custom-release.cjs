@@ -29,8 +29,7 @@ function prepare(root, identity) {
   const cargoPath = path.join(root, 'src-tauri/Cargo.toml');
   fs.writeFileSync(cargoPath, fs.readFileSync(cargoPath, 'utf8').replace(/^version\s*=\s*"[^"]+"/m, `version = "${identity.version}"`));
   writeJson(path.join(root, 'custom-release.json'), identity);
-  fs.writeFileSync(path.join(root, 'release-notes.md'),
-    `个人自用定制版本 ${identity.version}\n\n源码：${identity.commit}\n上游：${identity.upstreamVersion} (${identity.upstreamCommit})\n\nmacOS 未经 Apple 签名或公证；所有更新产物使用独立 Tauri 更新签名。\n`);
+  fs.writeFileSync(path.join(root, 'release-notes.md'), identity.releaseNotes || require('./custom-notes.cjs').collectNotes(root, identity));
 }
 
 function verifySignature(data, signatureText, publicKeyText) {
@@ -89,7 +88,7 @@ function main() {
       commit: git('rev-parse', 'HEAD'), upstreamCommit: git('merge-base', 'HEAD', 'origin/main'),
       upstreamVersion: readJson('package.json').version,
       publishedAt: git('show', '-s', '--format=%cI', 'HEAD') };
-    validateIdentity(identity); writeJson('custom-release.json', identity);
+    validateIdentity(identity); identity.releaseNotes = require('./custom-notes.cjs').collectNotes(root, identity); writeJson('custom-release.json', identity);
     fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${identity.version}\ncommit=${identity.commit}\n`);
   } else if (mode === 'prepare') prepare(root, readJson('custom-release.json'));
   else if (mode === 'aggregate') aggregate(root, readJson('custom-release.json'));

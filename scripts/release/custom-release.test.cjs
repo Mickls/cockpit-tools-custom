@@ -54,7 +54,7 @@ test('complete signed matrix builds fork manifests and rejects mixed provenance'
   const targets = ['aarch64-apple-darwin', 'x86_64-apple-darwin', 'universal-apple-darwin',
     'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu'];
   for (const target of targets) fs.writeFileSync(path.join(assets, `provenance-${target}.json`), JSON.stringify({ ...identity, target }));
-  fs.writeFileSync(path.join(root, 'release-notes.md'), '个人自用版本');
+  fs.writeFileSync(path.join(root, 'release-notes.md'), '更新内容');
   aggregate(root, identity);
   const latest = JSON.parse(fs.readFileSync(path.join(assets, 'latest.json')));
   assert.equal(latest.version, identity.version);
@@ -66,7 +66,7 @@ test('complete signed matrix builds fork manifests and rejects mixed provenance'
   assert.throws(() => aggregate(root, identity), /Invalid artifact/);
 });
 
-test('custom release identity uses the numeric personal-use channel', () => {
+test('custom release identity uses the numeric custom channel', () => {
   assert.doesNotThrow(() => validateIdentity({
     version: '2.0.1269',
     commit: 'a'.repeat(40),

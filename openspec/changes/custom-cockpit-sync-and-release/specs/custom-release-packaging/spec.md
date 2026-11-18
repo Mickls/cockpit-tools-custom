@@ -44,7 +44,7 @@
 
 ### Requirement: 发布完整性门槛
 
-仅当全部必需平台构建、签名、清单及完整性检查成功后，流程 SHALL 创建完整的草稿或验证发布。
+仅当全部必需平台构建、签名、清单及完整性检查成功后，流程 SHALL 公开完整 Release；未完成验证时仅允许内部暂存，不得公开。
 
 #### Scenario: 完整发布
 - **WHEN** 全部目标构建与验证成功
@@ -62,10 +62,10 @@
 - **WHEN** 任一产物、签名、清单或验证步骤失败
 - **THEN** 流程 SHALL 保留诊断，且 SHALL 不将该发布标记为公开完成
 
-### Requirement: 个人自用打包不依赖 Apple 签名
+### Requirement: 定制版本打包不依赖 Apple 签名
 
-个人自用构建 SHALL 不要求 Apple Developer ID 证书或公证凭据；安装包 SHALL 保留 Tauri 更新签名，并不得声称已通过 Apple 签名或公证。
+定制版本构建 SHALL 不要求 Apple Developer ID 证书或公证凭据；安装包 SHALL 保留 Tauri 更新签名，并不得声称已通过 Apple 签名或公证。
 
 #### Scenario: 无 Apple 证书仍可构建
-- **WHEN** 个人自用工作流未配置任何 Apple 签名或公证密钥
+- **WHEN** 定制版本工作流未配置任何 Apple 签名或公证密钥
 - **THEN** macOS 打包 SHALL 正常进行，只以 Tauri 更新签名和产物验证作为发布必需门槛

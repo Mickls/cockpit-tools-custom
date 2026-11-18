@@ -1,6 +1,6 @@
-# 个人自用安装包
+# 构建与发布
 
-每次合并到 `custom` 后，`Custom desktop packages` 针对准确提交生成 macOS arm64 / x64 / universal、Windows x64、Linux x64 / arm64 安装包。新任务不会取消前一次合并的打包。
+每次合并到 `custom` 后，`Desktop Release` 针对准确提交生成 macOS arm64 / x64 / universal、Windows x64、Linux x64 / arm64 安装包。新任务不会取消前一次合并的打包。
 
 ## 签名策略
 
@@ -12,8 +12,12 @@
 
 版本为 `2.0.N`，N 是受保护 `custom` 提交的 first-parent 提交数。不能强制改写 `custom` 历史。重跑相同 SHA 保留相同版本；仅在隔离构建工作区修改版本文件，不自动提交版本更新，避免循环构建。
 
-全部平台及来源验证成功后创建完整草稿 Release，包含更新清单、SHA256SUMS、按平台记录的来源元数据和安装包。失败时保留 Actions 诊断，不生成不完整 Release。首次发布先保留草稿，实机验收后再公开；更新器只读取已公开的 fork Release。首次从官方版改用定制版需手动安装。
+全部平台、签名、来源、清单和校验和验证成功后自动公开 Release，包含更新清单、SHA256SUMS、按平台记录的来源元数据和安装包。失败时保留 Actions 诊断，不生成不完整 Release。草稿仅在上传期间作为内部暂存状态，验证完成后立即公开；更新器读取已公开的 fork Release。首次从官方版改用定制版需手动安装。
 
 fork 更新源为 `https://github.com/Mickls/cockpit-tools/releases/latest/download/latest.json` 及目标平台清单。官方原有 Release 工作流在这个 fork 上禁用，避免意外要求 Apple 凭据或使用官方发布策略。
 
 实机验收分别检查：安装启动、账号及实例保留、升级后配对密钥保留、更新源持续指向 fork。CI 构建通过不代表这些真实设备验收已通过。
+
+## 更新说明
+
+定制发布说明维护在 `release-notes/custom/*.md`，每项变更新增独立文件。从上一次公开 Release 到当前提交有新增或修改的说明时，定制内容置于首位，官方更新说明折叠附后；没有定制说明变化时直接沿用对应官方版本正文。官方版本和说明按上游基线固定，不随构建期间的官方最新版本漂移。
