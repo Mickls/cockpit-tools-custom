@@ -17,6 +17,8 @@ pub async fn codex_credential_sync_manual_sync(account_id:String)->Result<bool,S
 #[tauri::command]
 pub async fn codex_credential_sync_create_invite()->Result<String,String>{crate::modules::codex_credential_sync::invite().await}
 #[tauri::command]
+pub async fn codex_credential_sync_long_pairing(replace:bool)->Result<String,String>{codex_credential_sync::manage_long_pairing(replace).await}
+#[tauri::command]
 pub async fn codex_credential_sync_list_pairings()->Result<serde_json::Value,String>{crate::modules::codex_credential_sync::pairings().await}
 #[tauri::command]
 pub async fn codex_credential_sync_approve_pairing(pairing_id:String)->Result<(),String>{crate::modules::codex_credential_sync::approve(pairing_id).await}

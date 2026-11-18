@@ -7,12 +7,16 @@ use serde::{Deserialize,Serialize};
 use serde_json::{json,Value};
 use sha2::{Digest,Sha256};
 use std::{collections::BTreeMap,fs,path::PathBuf,sync::Mutex};
+#[path="long_pairing.rs"] mod long_pairing;
+pub use long_pairing::manage as manage_long_pairing;
 static SECRET_LOCK:Mutex<()>=Mutex::new(());
 #[derive(Clone,Serialize,Deserialize)]
 pub struct SecretState {
  pub box_secret:[u8;32],pub keys:Option<Vec<u8>>,pub epoch:i64,#[serde(default)]pub version:u64,
  pub trusted:BTreeMap<String,String>,pub pending:Option<Pending>,
  #[serde(default)]pub recovery:Option<RecoveryPublic>,#[serde(default)]pub recovery_private:Option<[u8;32]>,
+ #[serde(default)]long_pairing:Option<long_pairing::Code>,
+ #[serde(default)]previous_long_pairing:Option<long_pairing::Code>,
 }
 #[derive(Clone,Serialize,Deserialize)]pub struct Pending {pub code:String,pub pinned_issuer:String}
 #[derive(Clone,Serialize,Deserialize)]pub struct Invite {pub server:String,pub code:String,pub issuer:String}
@@ -27,7 +31,7 @@ pub fn secret()->Result<SecretState,String>{
   Ok(s)=>crate::modules::secure_account_storage::deserialize_encrypted_snapshot(&s),
   Err(e) if e.kind()==std::io::ErrorKind::NotFound=>{
    let mut box_secret=[0;32];rand::rngs::OsRng.fill_bytes(&mut box_secret);
-   let state=SecretState{box_secret,keys:None,epoch:1,version:0,trusted:BTreeMap::new(),pending:None,recovery:None,recovery_private:None};write_secret(&state)?;Ok(state)
+   let state=SecretState{box_secret,keys:None,epoch:1,version:0,trusted:BTreeMap::new(),pending:None,recovery:None,recovery_private:None,long_pairing:None,previous_long_pairing:None};write_secret(&state)?;Ok(state)
   },Err(_)=>Err("无法读取同步密钥，未生成替代密钥".into())
  }
 }
@@ -49,6 +53,7 @@ fn cert_bytes(c:&Certificate)->Result<Vec<u8>,String>{serde_json::to_vec(&(&c.is
 fn public_key(value:&str)->Result<VerifyingKey,String>{let b:[u8;32]=STANDARD.decode(value).map_err(|_|"设备公钥无效")?.try_into().map_err(|_|"设备公钥长度无效")?;VerifyingKey::from_bytes(&b).map_err(|_|"设备公钥无效".into())}
 fn verify_cert(c:&Certificate,issuer:&str)->Result<(),String>{let s=STANDARD.decode(&c.signature).map_err(|_|"配对签名无效")?;public_key(issuer)?.verify_strict(&cert_bytes(c)?,&Signature::from_slice(&s).map_err(|_|"配对签名无效")?).map_err(|_|"配对签名验证失败".into())}
 pub async fn register(input:String)->Result<CodexCredentialSyncSettings,String>{
+ if let Some(encoded)=input.trim().strip_prefix(long_pairing::PREFIX){return long_pairing::join(encoded).await;}
  let mut config=load()?;let key=load_or_create_device_signing_key()?;let id=device_id(&key);
  if secret()?.keys.is_some(){return Err("此设备已经配对；请勿重复登记".into());}
  let (code,pin)=if let Some(encoded)=input.trim().strip_prefix("cockpit-sync-v1:") {
@@ -101,7 +106,18 @@ pub async fn devices()->Result<Value,String>{
  let items=value["devices"].as_array().ok_or("设备列表无效")?;let vault=load()?.vault_id.ok_or("同步库未配置")?;let mut changed=false;
  for _ in 0..items.len().min(64){let mut added=false;for item in items{
   if item["revoked"].as_bool()==Some(true){continue;}
-  let Some(text)=item["certificate"].as_str()else{continue};let Ok(cert)=serde_json::from_str::<Certificate>(text)else{continue};
+  let Some(text)=item["certificate"].as_str()else{continue};
+  let cert=match serde_json::from_str::<Certificate>(text) {
+   Ok(cert)=>cert,
+   Err(_)=>{
+    let Some(cert)=long_pairing::verify_member(text,&vault,&state.trusted)else{continue};
+    // Old grants cannot introduce new identities after a key rotation.
+    if cert.wrapped_hash!=format!("long-pairing-{}",state.epoch){continue;}
+    if item["device_id"].as_str()!=Some(&cert.member)||item["public_key"].as_str()!=Some(&cert.public_key)
+      ||item["box_public_key"].as_str()!=Some(&cert.box_public_key)||state.trusted.contains_key(&cert.member){continue;}
+    state.trusted.insert(cert.member,cert.public_key);added=true;changed=true;continue;
+   }
+  };
   if cert.vault!=vault||item["device_id"].as_str()!=Some(&cert.member)||item["public_key"].as_str()!=Some(&cert.public_key){continue;}
   if state.trusted.contains_key(&cert.member){continue;}
   let issuer=if cert.issuer=="recovery"{state.recovery.as_ref().map(|r|r.signing_key.clone())}else{state.trusted.get(&cert.issuer).cloned()};
@@ -185,7 +201,9 @@ pub async fn refresh_recovery()->Result<(),String>{
  verify_cert(&cert,state.trusted.get(&cert.issuer).ok_or("恢复证明设备未经信任")?)?;
  if cert.vault!=load()?.vault_id.as_deref().unwrap_or("")||cert.member!="recovery"||Some(cert.public_key.as_str())!=response["signing_key"].as_str()||Some(cert.box_public_key.as_str())!=response["public_key"].as_str(){return Err("恢复公钥绑定无效".into());}
  if let Some(metadata)=&state.recovery {if metadata.public_key!=cert.box_public_key||metadata.signing_key!=cert.public_key{return Err("恢复公钥与本机信任记录不一致".into());}}
- state.recovery=Some(RecoveryPublic{public_key:cert.box_public_key,signing_key:cert.public_key});store_secret(&state)?;
+ if state.recovery.is_none(){
+  state.recovery=Some(RecoveryPublic{public_key:cert.box_public_key,signing_key:cert.public_key});store_secret(&state)?;
+ }
  if response["key_epoch"].as_i64()!=Some(state.epoch){publish_recovery(&state).await?;}
  Ok(())
 }
@@ -198,7 +216,16 @@ pub async fn restore_recovery(input:String,code:String)->Result<CodexCredentialS
  let response=transport::recover_enrollment(&recovery.server,json!({"code":code,"device_id":id,"public_key":proof.public_key,"box_public_key":proof.box_public_key,"certificate":serde_json::to_string(&proof).map_err(|_|"恢复登记证明编码失败")?})).await?;
  let cert:Certificate=serde_json::from_str(response["certificate"].as_str().ok_or("恢复证明缺失")?).map_err(|_|"恢复证明无效")?;
  let mut trusted=recovery.trusted;
- if let Some(items)=response["devices"].as_array(){for _ in 0..items.len(){for item in items{let Some(text)=item["certificate"].as_str()else{continue};let Ok(c)=serde_json::from_str::<Certificate>(text)else{continue};let issuer=if c.issuer=="recovery"{Some(STANDARD.encode(proof_signer.verifying_key().as_bytes()))}else{trusted.get(&c.issuer).cloned()};if c.vault==recovery.vault&&item["device_id"].as_str()==Some(&c.member)&&item["public_key"].as_str()==Some(&c.public_key){if let Some(issuer)=issuer{if verify_cert(&c,&issuer).is_ok(){trusted.insert(c.member,c.public_key);}}}}}}
+ if let Some(items)=response["devices"].as_array(){for _ in 0..items.len().min(64){for item in items{
+  let Some(text)=item["certificate"].as_str()else{continue};
+  let cert=if let Ok(c)=serde_json::from_str::<Certificate>(text){
+   let issuer=if c.issuer=="recovery"{Some(STANDARD.encode(proof_signer.verifying_key().as_bytes()))}else{trusted.get(&c.issuer).cloned()};
+   issuer.filter(|issuer|verify_cert(&c,issuer).is_ok()).map(|_|c)
+  }else{long_pairing::verify_member(text,&recovery.vault,&trusted)};
+  if let Some(c)=cert.filter(|c|c.vault==recovery.vault&&item["device_id"].as_str()==Some(&c.member)&&item["public_key"].as_str()==Some(&c.public_key)){
+   trusted.entry(c.member).or_insert(c.public_key);
+  }
+ }}}
  verify_cert(&cert,trusted.get(&cert.issuer).ok_or("恢复设备无法从离线信任记录验证")?)?;
  let wrapped=STANDARD.decode(response["encrypted_key_wrap"].as_str().ok_or("恢复密文缺失")?).map_err(|_|"恢复密文无效")?;
  if cert.vault!=recovery.vault||cert.member!="recovery"||cert.public_key!=STANDARD.encode(proof_signer.verifying_key().as_bytes())||cert.box_public_key!=STANDARD.encode(crypto_box::SecretKey::from(recovery.private_key).public_key().as_bytes())||cert.wrapped_hash!=format!("{:x}",Sha256::digest(&wrapped)){return Err("恢复密文身份绑定无效".into());}

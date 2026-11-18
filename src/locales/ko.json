@@ -6568,6 +6568,14 @@
       "officialUnavailable": "이 계정은 공식 초기화 기록을 지원하지 않습니다"
     },
     "credentialSync": {
+      "longCode": "장기 페어링 코드 받기",
+      "replaceCode": "페어링 코드 변경",
+      "confirmReplace": "변경 확인(이전 코드는 무효화됨)",
+      "showCode": "페어링 코드 표시",
+      "hideCode": "페어링 코드 숨기기",
+      "advanced": "고급 옵션",
+      "recoverInvalid": "인증 오류가 있는 계정 복구",
+      "unsupported": "이 계정은 자격 증명 동기화를 사용할 수 없습니다",
       "title": "Codex 인증 정보 동기화",
       "desc": "개인 기기 간 인증을 복구합니다. 서버에는 암호화된 데이터만 저장하며 일반 토큰 갱신은 업로드하지 않습니다.",
       "pending": "대기 중 업로드: {{count}}",

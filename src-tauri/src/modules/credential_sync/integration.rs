@@ -28,6 +28,47 @@ fn fixture_account()->crate::models::codex::CodexAccount{
  let mut a=crate::models::codex::CodexAccount::new("protocol-fixture".into(),"protocol-fixture@example.invalid".into(),tokens);a.user_id=Some("fixture-user".into());a.account_id=Some("fixture-workspace".into());a.organization_id=Some("fixture-org".into());a
 }
 #[tokio::test]
+#[ignore="Requires the Tailscale service with long pairing deployed; only creates an isolated synthetic vault"]
+async fn credential_sync_deployed_long_pairing_preserves_existing_devices(){
+ let _lock=crate::modules::test_support::env_lock().lock().unwrap_or_else(|e|e.into_inner());
+ let mut profiles=Profiles::new();
+ let a=profiles.add();let b=profiles.add();let c=profiles.add();let d=profiles.add();
+ let configure=|root:&PathBuf|{profiles.select(root);save(CodexCredentialSyncSettings{server_url:"https://100.100.1.1:18444".into(),..Default::default()}).unwrap();};
+ configure(&a);
+ let first=sdk::register(enrollment_code(None)).await.unwrap();
+ let a_id=first.device_id.unwrap();
+ let invite=sdk::invite().await.unwrap();
+ configure(&b);
+ let b_id=sdk::register(invite).await.unwrap().device_id.unwrap();
+ profiles.select(&a);
+ let pending=sdk::pairings().await.unwrap();
+ let request=pending["pairings"][0]["pairing_id"].as_str().unwrap();
+ sdk::approve(request.into()).await.unwrap();
+ profiles.select(&b);
+ assert!(sdk::finish_pairing().await.unwrap());
+ profiles.select(&a);
+ let code=sdk::manage_long_pairing(false).await.unwrap();
+ assert!(code==sdk::manage_long_pairing(false).await.unwrap());
+ let content=sdk::keys(&sdk::secret().unwrap()).unwrap().content;
+ configure(&c);
+ let third=sdk::register(code.clone()).await.unwrap();
+ assert!(third.paired);
+ assert_eq!(third.vault_id,first.vault_id);
+ assert!(content==sdk::keys(&sdk::secret().unwrap()).unwrap().content);
+ let c_id=third.device_id.unwrap();
+ profiles.select(&b);
+ sdk::devices().await.unwrap();
+ assert!(sdk::trusted_key(&c_id).is_ok());
+ assert_eq!(load().unwrap().device_id,Some(b_id));
+ profiles.select(&a);
+ let next=sdk::manage_long_pairing(true).await.unwrap();
+ assert!(code!=next);
+ assert_eq!(load().unwrap().device_id,Some(a_id));
+ configure(&d);
+ assert!(sdk::register(code).await.is_err());
+ assert!(sdk::register(next).await.unwrap().paired);
+}
+#[tokio::test]
 #[ignore="Requires the explicitly authorized Tailscale deployment and SSH; uses isolated synthetic vault"]
 async fn credential_sync_deployed_two_clients_backup_recovery_and_rotation(){
  use reqwest::Method;

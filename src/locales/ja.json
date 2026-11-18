@@ -6568,6 +6568,14 @@
       "officialUnavailable": "このアカウントでは公式リセット履歴を利用できません"
     },
     "credentialSync": {
+      "longCode": "長期ペアリングコードを取得",
+      "replaceCode": "ペアリングコードを変更",
+      "confirmReplace": "変更を確定（古いコードは無効になります）",
+      "showCode": "ペアリングコードを表示",
+      "hideCode": "ペアリングコードを隠す",
+      "advanced": "詳細設定",
+      "recoverInvalid": "認証エラーのあるアカウントを復旧",
+      "unsupported": "このアカウントは認証情報の同期に対応していません",
       "title": "Codex 認証情報の同期",
       "desc": "自分のデバイス間で認証を復旧します。サーバーには暗号化データのみを保存し、通常のトークン更新はアップロードしません。",
       "pending": "保留中のアップロード: {{count}}",

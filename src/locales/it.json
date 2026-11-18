@@ -6568,6 +6568,14 @@
       "officialUnavailable": "La cronologia ufficiale dei ripristini non è disponibile per questo account"
     },
     "credentialSync": {
+      "longCode": "Ottieni codice di abbinamento",
+      "replaceCode": "Sostituisci codice di abbinamento",
+      "confirmReplace": "Conferma sostituzione (il vecchio codice non sarà più valido)",
+      "showCode": "Mostra codice di abbinamento",
+      "hideCode": "Nascondi codice di abbinamento",
+      "advanced": "Opzioni avanzate",
+      "recoverInvalid": "Recupera gli account con errori di autorizzazione",
+      "unsupported": "Questo account non supporta la sincronizzazione delle credenziali",
       "title": "Sincronizzazione credenziali Codex",
       "desc": "Ripristina l’autorizzazione tra i tuoi dispositivi. Il server conserva solo dati crittografati; i normali rinnovi dei token non vengono caricati.",
       "pending": "Caricamenti in attesa: {{count}}",

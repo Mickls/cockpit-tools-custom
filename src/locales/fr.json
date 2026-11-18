@@ -6568,6 +6568,14 @@
       "officialUnavailable": "L’historique officiel des resets est indisponible pour ce compte"
     },
     "credentialSync": {
+      "longCode": "Obtenir le code d’association",
+      "replaceCode": "Remplacer le code d’association",
+      "confirmReplace": "Confirmer (l’ancien code ne fonctionnera plus)",
+      "showCode": "Afficher le code d’association",
+      "hideCode": "Masquer le code d’association",
+      "advanced": "Options avancées",
+      "recoverInvalid": "Récupérer les comptes avec une erreur d’autorisation",
+      "unsupported": "Ce compte ne prend pas en charge la synchronisation des identifiants",
       "title": "Synchronisation des identifiants Codex",
       "desc": "Restaurez l’autorisation entre vos appareils. Le serveur ne conserve que des données chiffrées ; les renouvellements ordinaires des jetons ne sont pas envoyés.",
       "pending": "Envois en attente : {{count}}",

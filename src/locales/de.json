@@ -6568,6 +6568,14 @@
       "officialUnavailable": "Für dieses Konto ist kein offizieller Reset-Verlauf verfügbar"
     },
     "credentialSync": {
+      "longCode": "Kopplungscode abrufen",
+      "replaceCode": "Kopplungscode ersetzen",
+      "confirmReplace": "Ersetzen bestätigen (alter Code wird ungültig)",
+      "showCode": "Kopplungscode anzeigen",
+      "hideCode": "Kopplungscode ausblenden",
+      "advanced": "Erweiterte Optionen",
+      "recoverInvalid": "Konten mit Autorisierungsfehlern wiederherstellen",
+      "unsupported": "Dieses Konto kann keine Anmeldedaten synchronisieren",
       "title": "Codex-Anmeldedaten synchronisieren",
       "desc": "Anmeldung auf eigenen Geräten wiederherstellen. Der Server speichert nur verschlüsselte Daten; normale Token-Aktualisierungen werden nicht hochgeladen.",
       "pending": "Ausstehende Uploads: {{count}}",

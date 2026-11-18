@@ -6568,6 +6568,14 @@
       "officialUnavailable": "O histórico oficial de redefinições não está disponível para esta conta"
     },
     "credentialSync": {
+      "longCode": "Obter código de pareamento",
+      "replaceCode": "Substituir código de pareamento",
+      "confirmReplace": "Confirmar substituição (o código antigo deixará de funcionar)",
+      "showCode": "Mostrar código de pareamento",
+      "hideCode": "Ocultar código de pareamento",
+      "advanced": "Opções avançadas",
+      "recoverInvalid": "Recuperar contas com erros de autorização",
+      "unsupported": "Esta conta não pode usar a sincronização de credenciais",
       "title": "Sincronização de credenciais do Codex",
       "desc": "Recupere a autorização entre seus dispositivos. O servidor armazena apenas dados criptografados; renovações comuns de tokens não são enviadas.",
       "pending": "Uploads pendentes: {{count}}",
