@@ -3,6 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { uploadReleaseAssets } = require('./upload_release_assets.cjs');
+const { REPO } = require('./custom-repository.cjs');
 
 function defaultGh(args) {
   const result = spawnSync('gh', args, { encoding: 'utf8', timeout: 120000, maxBuffer: 4 * 1024 * 1024 });
@@ -44,7 +45,7 @@ function newerTag(a, b) {
   return false;
 }
 async function publish(root, { gh = defaultGh, upload = uploadReleaseAssets, repo = process.env.GITHUB_REPOSITORY } = {}) {
-  if (repo !== 'Mickls/cockpit-tools') throw new Error('Refusing publication outside the custom fork');
+  if (repo !== REPO) throw new Error('Refusing publication outside the custom repository');
   const identity = JSON.parse(fs.readFileSync(path.join(root, 'custom-release.json'), 'utf8'));
   const tag = `v${identity.version}`;
   const files = releaseFiles(root);

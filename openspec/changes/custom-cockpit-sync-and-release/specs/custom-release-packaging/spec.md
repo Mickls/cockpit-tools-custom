@@ -2,21 +2,21 @@
 
 ## Purpose
 
-在定制变更合并后，为全部支持的操作系统生成可信的桌面安装包，并使签名、更新清单与实际构建源码一致。发布流程必须报告每个平台的结果，只有完整验证通过的产物集合才可成为可发布版本。
+按需为三个受支持的平台生成桌面安装包，并使签名、更新清单与实际构建源码一致。
 
 ## ADDED Requirements
 
-### Requirement: 定制合并后的多平台打包
+### Requirement: 手动触发三平台打包
 
-每次成功合并到 `custom` 后，发布流程 SHALL 为支持的 macOS、Windows 和 Linux 目标打包。
+发布流程 SHALL 只允许维护者在 `custom` 手动触发，目标为 Windows x64、Linux x64 和 macOS arm64。
 
 #### Scenario: 多平台构建成功
-- **WHEN** 提交被接收到 `custom`
-- **THEN** 流程 SHALL 构建已配置的 macOS、Windows、Linux 产物，并分别报告目标结果
+- **WHEN** 维护者从 `custom` 手动触发
+- **THEN** 流程 SHALL 针对准确提交构建三个指定目标，并分别报告结果
 
-#### Scenario: 连续合并
-- **WHEN** 前一轮打包尚未结束时又有新的合并被接收
-- **THEN** 每次合并 SHALL 保留针对准确提交的构建；新合并 SHALL NOT 静默取消旧合并的必需打包
+#### Scenario: 非手动事件
+- **WHEN** 发生 PR、推送或定时事件
+- **THEN** 流程 SHALL NOT 启动
 
 #### Scenario: 某个平台失败
 - **WHEN** 任一必需平台构建失败
@@ -48,7 +48,7 @@
 
 #### Scenario: 完整发布
 - **WHEN** 全部目标构建与验证成功
-- **THEN** 流程 SHALL 生成可供审阅或发布的完整产物集合
+- **THEN** 流程 SHALL 公开完整 Release，草稿仅作上传暂存
 
 ### Requirement: 升级保留定制功能与用户数据
 

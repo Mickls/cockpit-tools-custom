@@ -40,12 +40,12 @@ fork SHALL 仅将 `main` 和 `custom` 保留为长期远端分支。已合并的
 
 ### Requirement: 合并与验证门槛
 
-存在冲突、必需检查失败或兼容性验证失败时，上游同步变更 SHALL 保持未合并状态。
+上游同步变更 SHALL 在本地完成检查后合并；PR SHALL NOT 触发 Actions。
 
 #### Scenario: 无冲突且检查通过
 - **WHEN** 临时更新不存在冲突且全部必需检查通过
 - **THEN** 更新 MAY 合并到 `custom`，随后删除临时分支
-- **AND** 自动合并 SHALL 在 `custom` 祖先关系中保留上游提交
+- **AND** 合并 SHALL 在 `custom` 祖先关系中保留上游提交
 
 #### Scenario: 冲突或检查失败
 - **WHEN** 合并存在冲突或必需检查失败

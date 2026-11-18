@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
+const { REPO } = require('./custom-repository.cjs');
 
 function composeNotes(customNotes, upstreamNotes) {
   const custom = customNotes.map(s => s.trim()).filter(Boolean);
@@ -20,7 +21,7 @@ function collectNotes(root, identity) {
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
   // Reuse the snapshot from an existing release on reruns, including partial
   // uploads. Advancing latest must not rewrite an older build's notes.
-  const existing = spawnSync('gh', ['api', `repos/Mickls/cockpit-tools/releases/tags/v${identity.version}`], { cwd: root, encoding: 'utf8' });
+  const existing = spawnSync('gh', ['api', `repos/${REPO}/releases/tags/v${identity.version}`], { cwd: root, encoding: 'utf8' });
   if (existing.status === 0) {
     const pinned = JSON.parse(existing.stdout);
     if (pinned.target_commitish !== identity.commit || !pinned.body?.trim()) throw new Error('Existing release notes/source mismatch');
@@ -34,7 +35,7 @@ function collectNotes(root, identity) {
   if (release.status === 0) upstream = JSON.parse(release.stdout).body;
   // The upstream changelog is pinned to the same commit when GitHub is unavailable.
   if (!upstream?.trim()) upstream = changelogSection(official('CHANGELOG.zh-CN.md'), version) + '\n\n' + changelogSection(official('CHANGELOG.md'), version);
-  const previous = spawnSync('gh', ['api', 'repos/Mickls/cockpit-tools/releases/latest'], { cwd: root, encoding: 'utf8' });
+  const previous = spawnSync('gh', ['api', `repos/${REPO}/releases/latest`], { cwd: root, encoding: 'utf8' });
   let base = null;
   if (previous.status === 0) {
     const tag = JSON.parse(previous.stdout).tag_name;

@@ -2,26 +2,26 @@
 
 基于 [jlcodes99/cockpit-tools](https://github.com/jlcodes99/cockpit-tools) 的定制分支，围绕多设备 Codex 账号管理、凭据恢复和持续跟进官方更新扩展。
 
-[下载 Release](https://github.com/Mickls/cockpit-tools/releases) · [官方仓库](https://github.com/jlcodes99/cockpit-tools) · [官方 README](https://github.com/jlcodes99/cockpit-tools/blob/main/README.md) · [凭据同步服务](https://github.com/Mickls/cockpit-credential-sync-server)
+[下载 Release](https://github.com/Mickls/cockpit-tools-custom/releases) · [官方仓库](https://github.com/jlcodes99/cockpit-tools) · [官方 README](https://github.com/jlcodes99/cockpit-tools/blob/main/README.md) · [凭据同步服务](https://github.com/Mickls/cockpit-credential-sync-server)
 
 ## 定制功能
 
 ### 持续跟进官方更新
 
 - 长期保留 `main` 和 `custom` 两个分支：`main` 跟进官方，`custom` 集成定制功能。
-- 定期检查官方正式版本；没有更新时不创建无效分支、PR 或合并。
-- 更新通过临时 PR 集成，通过检查后合并，合并后自动清理临时分支。
+- 维护者按需检查官方正式版本；没有更新时不创建分支、PR 或合并。
+- 更新通过临时 PR 集成，合并前在本地验证，合并后由 GitHub 自动清理临时分支。
 
 ### 多平台打包与更新
 
-- 每次合并到 `custom` 后，构建 macOS Apple Silicon、Intel、Universal，Windows x64，以及 Linux x64 / arm64。
+- 维护者在 `custom` 上手动运行 `Desktop Release`，构建 Windows x64、Linux x64 和 macOS Apple Silicon。PR、推送和定时任务不会触发打包。
 - 使用本仓库的 Release、更新清单和独立 Tauri 更新签名。
 - 全部目标和产物验证成功后公开 Release；失败时保留诊断，不公开不完整产物。
 - 有定制更新时以定制说明为主；没有定制更新时沿用对应官方版本说明。
 
-### 多设备凭据恢复（开发中）
+### 多设备凭据恢复
 
-配套服务为 [cockpit-credential-sync-server](https://github.com/Mickls/cockpit-credential-sync-server)。服务端已包含加密载荷、设备鉴权、配对与备份基础，桌面端的完整接入仍在 [PR #3](https://github.com/Mickls/cockpit-tools/pull/3) 开发，当前发布包尚不提供完整恢复流程。
+配套服务为 [cockpit-credential-sync-server](https://github.com/Mickls/cockpit-credential-sync-server)。桌面端默认关闭同步，需在 Codex 设置中配置服务器并配对。三个平台的实机验收仍待完成。
 
 目标行为：
 
@@ -40,7 +40,7 @@ Cockpit Tools 的账号切换、多实例、配额监控、API 服务及其他�
 - [构建与发布](docs/custom-release.md)
 - [定制方案和实施任务](openspec/changes/custom-cockpit-sync-and-release/proposal.md)
 
-首次从官方版切换到本分支时，请从本仓库 Release 手动安装；后续更新使用本仓库的签名和更新源。
+首次从官方版或旧 fork（含 `2.0.1270`）切换到新仓库时，请从本仓库 Release 手动覆盖安装；后续版本从新仓库自动检查更新。
 
 ## 开发
 
@@ -56,4 +56,4 @@ npm run test:release
 
 上游作者与项目：[jlcodes99/cockpit-tools](https://github.com/jlcodes99/cockpit-tools)。感谢原作者及上游 README 中列出的贡献者和依赖项目。
 
-保留上游 [LICENSE](LICENSE) 及资源中的第三方许可。项目采用上游的 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans)，定制分支不改变原有署名、非商业和相同方式共享要求；商业授权请联系上游作者。
+保留资源中的第三方许可。项目沿用上游 [README](https://github.com/jlcodes99/cockpit-tools/blob/main/README.md) 声明的 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans)，定制分支不改变原有署名、非商业和相同方式共享要求；商业授权请联系上游作者。

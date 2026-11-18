@@ -2,14 +2,14 @@
 
 ## Why（背景与动机）
 
-当前 fork 缺少一套能够持续跟进 Cockpit Tools 官方更新、同时保留定制功能的维护流程。此外，同一 Codex 账号在某台设备上的凭据失效后，用户可能需要在多台设备上重复授权。本变更建立长期仅保留 `main` / `custom` 的分支维护流程、合并后的多平台打包，以及可选的端到端加密凭据恢复服务，减少重复授权，且不让服务器掌握凭据解密能力。
+本变更在新的定制仓库保留 `main` / `custom` 两个长期分支，提供手动多平台打包和可选的端到端加密凭据恢复，减少多设备重复授权。
 
 ## What Changes（变更内容）
 
 - 远端长期仅保留 `main` 和 `custom`；本地开发和上游更新使用临时 `codex/*` 分支，合并后删除。
-- 定期比较官方上游版本或提交与 fork 的 `main`；没有更新时，不创建分支或 PR。
-- 将上游更新集成到 `custom`，自动运行检查；存在冲突或检查失败时阻止合并和发布。
-- 每次成功合并到 `custom` 后，为 macOS、Windows、Linux 打包，使用 fork 自有的更新地址、发布元数据及签名凭据。
+- 按需比较官方上游版本或提交与 `main`；没有更新时，不创建分支或 PR。
+- 上游更新通过 PR 集成到 `custom`，合并前在本地验证；PR、推送和定时事件不触发 Actions。
+- 手动从 `custom` 为 Windows x64、Linux x64、macOS arm64 打包，使用新仓库的更新地址、发布元数据及 Tauri 更新签名。
 - 建立独立凭据同步服务，提供设备登记、配对、心跳、密文备份、恢复协调、版本检查和设备撤销。
 - Codex OAuth 凭据采用端到端加密，服务器只能保存和转发密文，无法解密。
 - 仅在添加账号、完成重新授权或用户手动上传时主动备份；普通 Token 自动刷新不触发上传。
@@ -22,7 +22,7 @@
 ### New Capabilities（新增能力）
 
 - `upstream-maintenance`：检测官方更新，维护 `main` / `custom`，创建、合并和删除临时更新分支，并以检查结果约束发布。
-- `custom-release-packaging`：定制分支合并后，使用 fork 自有更新元数据，为 macOS、Windows、Linux 构建和发布签名安装包。
+- `custom-release-packaging`：从定制分支手动构建和发布三个平台的签名安装包。
 - `codex-credential-recovery`：设备配对、端到端加密的 Codex OAuth 凭据上传、在线设备协助恢复、密文备份兜底及有界重试。
 
 ### Modified Capabilities（修改现有能力）

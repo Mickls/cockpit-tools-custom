@@ -1,6 +1,6 @@
 # 构建与发布
 
-每次合并到 `custom` 后，`Desktop Release` 针对准确提交生成 macOS arm64 / x64 / universal、Windows x64、Linux x64 / arm64 安装包。新任务不会取消前一次合并的打包。
+在 GitHub 的 **Actions → Desktop Release → Run workflow** 中选择 `custom`，或运行 `gh workflow run custom-release.yml --repo Mickls/cockpit-tools-custom --ref custom`。工作流针对准确提交生成 Windows x64、Linux x64、macOS arm64 安装包；PR、推送和定时器均不会触发工作流。
 
 ## 签名策略
 
@@ -14,7 +14,7 @@
 
 全部平台、签名、来源、清单和校验和验证成功后自动公开 Release，包含更新清单、SHA256SUMS、按平台记录的来源元数据和安装包。失败时保留 Actions 诊断，不生成不完整 Release。草稿仅在上传期间作为内部暂存状态，验证完成后立即公开；更新器读取已公开的 fork Release。首次从官方版改用定制版需手动安装。
 
-fork 更新源为 `https://github.com/Mickls/cockpit-tools/releases/latest/download/latest.json` 及目标平台清单。官方原有 Release 工作流在这个 fork 上禁用，避免意外要求 Apple 凭据或使用官方发布策略。
+更新源为 `https://github.com/Mickls/cockpit-tools-custom/releases/latest/download/latest.json` 及目标平台清单。已安装的 `2.0.1270` 仍查询原 fork；首次迁移请从新仓库手动覆盖安装。旧工作流存放于 `.github/workflow-reference/`，不会执行。
 
 实机验收分别检查：安装启动、账号及实例保留、升级后配对密钥保留、更新源持续指向 fork。CI 构建通过不代表这些真实设备验收已通过。
 

@@ -4,7 +4,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
 
-const workflowPath = path.join(__dirname, "..", "..", ".github", "workflows", "release.yml");
+const workflowPath = path.join(__dirname, "..", "..", ".github", "workflow-reference", "release.yml");
 const workflow = fs.readFileSync(workflowPath, "utf8");
 
 function jobBody(name, nextName) {
@@ -110,7 +110,7 @@ test("Universal consumes this run's verified thin inputs and does not recompile"
 });
 
 test("trusted main CI and release jobs share caches, with correct platform separation", () => {
-  const ci = fs.readFileSync(path.join(__dirname, "../../.github/workflows/build-matrix.yml"), "utf8");
+  const ci = fs.readFileSync(path.join(__dirname, "../../.github/workflow-reference/build-matrix.yml"), "utf8");
   const cache = fs.readFileSync(path.join(__dirname, "../../.github/actions/host-build-cache/action.yml"), "utf8");
   assert.match(ci, /push:\s+branches:[\s\S]*?- "main"/);
   assert.match(ci, /uses: \.\/.github\/actions\/host-build-cache\s+with:\s+target: \$\{\{ matrix.cache_target \}\}/);

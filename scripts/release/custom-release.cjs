@@ -4,8 +4,11 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { buildTargetManifests, TARGET_SPECS } = require('./build_target_latest_json.cjs');
 
-const REPO = 'Mickls/cockpit-tools';
-const TARGETS = Object.keys(TARGET_SPECS);
+const { REPO } = require('./custom-repository.cjs');
+const TARGETS = [
+  'darwin-aarch64-app', 'windows-x86_64-msi', 'windows-x86_64-nsis',
+  'linux-x86_64-appimage', 'linux-x86_64-deb', 'linux-x86_64-rpm',
+];
 function readJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
 function writeJson(file, value) { fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n'); }
 function validateIdentity(identity) {
@@ -61,19 +64,21 @@ function aggregate(root, identity) {
     verifySignature(fs.readFileSync(path.join(assets, name)), fs.readFileSync(path.join(assets, name + '.sig'), 'utf8'), conf.plugins.updater.pubkey);
   }
   const provenance = files.filter(f => /^provenance-.*\.json$/.test(f)).map(f => readJson(path.join(assets, f)));
-  const expected = ['aarch64-apple-darwin', 'x86_64-apple-darwin', 'universal-apple-darwin',
-    'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu'];
+  const expected = ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu'];
   if (provenance.length !== expected.length || expected.some(target => !provenance.some(p => p.target === target))
     || provenance.some(p => p.commit !== identity.commit || p.version !== identity.version)) throw new Error('Mixed or missing platform provenance');
-  const universal = files.filter(f => /_universal\.app\.tar\.gz$/.test(f));
-  if (universal.length !== 1) throw new Error('Missing universal app');
-  verifySignature(fs.readFileSync(path.join(assets, universal[0])), fs.readFileSync(path.join(assets, universal[0] + '.sig'), 'utf8'), conf.plugins.updater.pubkey);
-  buildTargetManifests({ version: identity.version, repo: REPO, assetsDir: assets,
+  const manifests = buildTargetManifests({ version: identity.version, repo: REPO, assetsDir: assets,
     notesFile: path.join(root, 'release-notes.md'), publishedAt: identity.publishedAt, outputDir: assets, targets: TARGETS });
-  execFileSync(process.execPath, [path.join(__dirname, 'build_merged_latest_json.cjs'),
-    '--version', identity.version, '--repo', REPO, '--assets-dir', assets,
-    '--notes-file', path.join(root, 'release-notes.md'), '--published-at', identity.publishedAt,
-    '--output', path.join(assets, 'latest.json')]);
+  const platforms = {};
+  for (const [index, target] of TARGETS.entries()) {
+    const { url, signature } = readJson(manifests[index]);
+    platforms[target] = { url, signature };
+  }
+  platforms['darwin-aarch64'] = platforms['darwin-aarch64-app'];
+  platforms['windows-x86_64'] = platforms['windows-x86_64-msi'];
+  platforms['linux-x86_64'] = platforms['linux-x86_64-appimage'];
+  const { version, notes, pub_date } = readJson(manifests[0]);
+  writeJson(path.join(assets, 'latest.json'), { version, notes, pub_date, platforms });
   writeJson(path.join(assets, 'custom-release.json'), identity);
   const sums = fs.readdirSync(assets).filter(f => f !== 'SHA256SUMS.txt').sort().map(f =>
     `${crypto.createHash('sha256').update(fs.readFileSync(path.join(assets, f))).digest('hex')}  ${f}`);

@@ -44,7 +44,7 @@ test('verified release publishes only after uploads and remote verification', as
     if (args[1] === 'edit') { assert.ok(uploaded); assert.ok(args.includes('--draft=false')); assert.ok(args.includes('--latest=false')); remote.draft = false; }
     return '';
   };
-  const result = await publish(f.root, { repo: 'Mickls/cockpit-tools', gh, upload: async () => { uploaded = true; remote.assets = f.assets(); } });
+  const result = await publish(f.root, { repo: 'Mickls/cockpit-tools-custom', gh, upload: async () => { uploaded = true; remote.assets = f.assets(); } });
   assert.equal(result, 'published'); assert.equal(remote.draft, false);
 });
 test('failed upload leaves the release unexposed', async t => {
@@ -55,19 +55,19 @@ test('failed upload leaves the release unexposed', async t => {
     if (args[1] === 'edit') edited = true;
     return '';
   };
-  await assert.rejects(publish(f.root, { repo: 'Mickls/cockpit-tools', gh, upload: async () => { throw new Error('upload failed'); } }), /upload failed/);
+  await assert.rejects(publish(f.root, { repo: 'Mickls/cockpit-tools-custom', gh, upload: async () => { throw new Error('upload failed'); } }), /upload failed/);
   assert.equal(edited, false); assert.equal(remote.draft, true);
 });
 test('a partially uploaded asset set cannot be published', async t => {
   const f = fixture(t); const remote = { draft: true, target_commitish: f.identity.commit, assets: f.assets().slice(1) };
   let edited = false;
   const gh = args => { if (args[1] === 'edit') edited = true; return JSON.stringify(remote); };
-  await assert.rejects(publish(f.root, { repo: 'Mickls/cockpit-tools', gh, upload: async () => {} }), /incomplete/);
+  await assert.rejects(publish(f.root, { repo: 'Mickls/cockpit-tools-custom', gh, upload: async () => {} }), /incomplete/);
   assert.equal(edited, false);
 });
 test('rerunning an already verified public release makes no mutations', async t => {
   const f = fixture(t); const calls = [];
   const gh = args => { calls.push(args); return JSON.stringify({ draft: false, target_commitish: f.identity.commit, assets: f.assets() }); };
-  const result = await publish(f.root, { repo: 'Mickls/cockpit-tools', gh, upload: async () => { throw new Error('unexpected upload'); } });
+  const result = await publish(f.root, { repo: 'Mickls/cockpit-tools-custom', gh, upload: async () => { throw new Error('unexpected upload'); } });
   assert.equal(result, 'already-published'); assert.ok(calls.every(args => args[0] === 'api'));
 });

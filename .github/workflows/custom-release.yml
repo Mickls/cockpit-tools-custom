@@ -1,8 +1,6 @@
 name: Desktop Release
 
 on:
-  push:
-    branches: [custom]
   workflow_dispatch:
 
 permissions:
@@ -14,7 +12,7 @@ concurrency:
 
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/custom'
+    if: github.repository == 'Mickls/cockpit-tools-custom' && github.ref == 'refs/heads/custom'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.identity.outputs.version }}
@@ -27,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify packaging scripts
+        run: npm run test:release
       - name: Allocate reproducible custom version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,14 +44,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             target: aarch64-apple-darwin
             platform: macos
             arch: aarch64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            platform: macos
-            arch: x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             platform: windows
@@ -60,10 +56,6 @@ jobs:
             target: x86_64-unknown-linux-gnu
             platform: linux
             arch: amd64
-          - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            platform: linux
-            arch: aarch64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     steps:
@@ -108,18 +100,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           node scripts/release/custom-stage.cjs
-      - name: Preserve exact macOS slices for universal bundle
-        if: matrix.platform == 'macos'
-        env:
-          VERSION: ${{ needs.prepare.outputs.version }}
-          TARGET: ${{ matrix.target }}
-        run: node scripts/release/macos-universal.cjs --mode stage --target ${{ matrix.target }} --version ${{ needs.prepare.outputs.version }} --output universal-inputs/${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
-        if: matrix.platform == 'macos'
-        with:
-          name: universal-inputs-${{ matrix.target }}
-          path: universal-inputs/${{ matrix.target }}
-          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: packages-${{ matrix.target }}
@@ -137,57 +117,8 @@ jobs:
             release-assets/*
           if-no-files-found: ignore
 
-  universal:
-    needs: [prepare, build]
-    runs-on: macos-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.commit }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - run: npm ci --prefer-offline --no-audit --no-fund
-      - uses: actions/download-artifact@v4
-        with:
-          name: custom-release-identity
-      - run: node scripts/release/custom-release.cjs prepare
-      - uses: actions/download-artifact@v4
-        with:
-          name: universal-inputs-aarch64-apple-darwin
-          path: universal-inputs/aarch64-apple-darwin
-      - uses: actions/download-artifact@v4
-        with:
-          name: universal-inputs-x86_64-apple-darwin
-          path: universal-inputs/x86_64-apple-darwin
-      - name: Merge this run's verified slices
-        run: node scripts/release/macos-universal.cjs --mode merge --inputs universal-inputs --version ${{ needs.prepare.outputs.version }}
-      - run: npm run build
-      - name: Bundle universal app
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: '-'
-        run: node scripts/tauri.cjs bundle --ci --target universal-apple-darwin
-      - name: Stage universal packages
-        env:
-          TARGET: universal-apple-darwin
-          PLATFORM: macos
-          MAC_ARCH: universal
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: node scripts/release/custom-stage.cjs
-      - uses: actions/upload-artifact@v4
-        with:
-          name: packages-universal-apple-darwin
-          path: release-assets/*
-          if-no-files-found: error
-
   release:
-    needs: [prepare, build, universal]
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const { validateIdentity, TARGETS, verifySignature, aggregate } = require('./custom-release.cjs');
+const { REPO } = require('./custom-repository.cjs');
 
 function signatureFixture(data) {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
@@ -45,20 +46,19 @@ test('complete signed matrix builds fork manifests and rejects mixed provenance'
   fs.mkdirSync(assets); fs.mkdirSync(path.join(root, 'src-tauri'));
   const data = Buffer.from('signed package fixture'); const key = signatureFixture(data);
   fs.writeFileSync(path.join(root, 'src-tauri/tauri.conf.json'), JSON.stringify({ plugins: { updater: { pubkey: key.pub } } }));
-  const names = ['Cockpit_aarch64.app.tar.gz', 'Cockpit_x64.app.tar.gz', 'Cockpit_universal.app.tar.gz',
+  const names = ['Cockpit_aarch64.app.tar.gz',
     'Cockpit_2.0.1_x64_en-US.msi', 'Cockpit_2.0.1_x64-setup.exe',
-    'Cockpit_2.0.1_amd64.AppImage', 'Cockpit_2.0.1_amd64.deb', 'Cockpit-2.0.1-1.x86_64.rpm',
-    'Cockpit_2.0.1_aarch64.AppImage', 'Cockpit_2.0.1_arm64.deb', 'Cockpit-2.0.1-1.aarch64.rpm'];
+    'Cockpit_2.0.1_amd64.AppImage', 'Cockpit_2.0.1_amd64.deb', 'Cockpit-2.0.1-1.x86_64.rpm'];
   for (const name of names) { fs.writeFileSync(path.join(assets, name), data); fs.writeFileSync(path.join(assets, name + '.sig'), key.sig); }
   const identity = { version: '2.0.1', commit: 'a'.repeat(40), upstreamCommit: 'b'.repeat(40), publishedAt: '2026-11-17T00:00:00Z' };
-  const targets = ['aarch64-apple-darwin', 'x86_64-apple-darwin', 'universal-apple-darwin',
-    'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu'];
+  const targets = ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu'];
   for (const target of targets) fs.writeFileSync(path.join(assets, `provenance-${target}.json`), JSON.stringify({ ...identity, target }));
   fs.writeFileSync(path.join(root, 'release-notes.md'), '更新内容');
   aggregate(root, identity);
   const latest = JSON.parse(fs.readFileSync(path.join(assets, 'latest.json')));
   assert.equal(latest.version, identity.version);
-  assert.ok(Object.values(latest.platforms).every(p => p.url.startsWith('https://github.com/Mickls/cockpit-tools/releases/download/v2.0.1/')));
+  assert.deepEqual(Object.keys(latest.platforms), [...TARGETS, 'darwin-aarch64', 'windows-x86_64', 'linux-x86_64']);
+  assert.ok(Object.values(latest.platforms).every(p => p.url.startsWith(`https://github.com/${REPO}/releases/download/v2.0.1/`)));
   assert.ok(fs.readFileSync(path.join(assets, 'SHA256SUMS.txt'), 'utf8').includes('latest.json'));
   fs.writeFileSync(path.join(assets, 'provenance-aarch64-apple-darwin.json'), JSON.stringify({ ...identity, target: targets[0], commit: 'c'.repeat(40) }));
   assert.throws(() => aggregate(root, identity), /provenance/);
@@ -83,16 +83,15 @@ test('custom release identity uses the numeric custom channel', () => {
 
 test('all required platform targets are explicit and stable', () => {
   assert.deepEqual(TARGETS, [
-    'darwin-aarch64-app', 'darwin-x86_64-app',
+    'darwin-aarch64-app',
     'windows-x86_64-msi', 'windows-x86_64-nsis',
     'linux-x86_64-appimage', 'linux-x86_64-deb', 'linux-x86_64-rpm',
-    'linux-aarch64-appimage', 'linux-aarch64-deb', 'linux-aarch64-rpm',
   ]);
 });
 
 test('fork updater metadata points to the fork, never the official repository', () => {
   const conf = JSON.parse(fs.readFileSync(path.join(__dirname, '../../src-tauri/tauri.conf.json'), 'utf8'));
-  assert.equal(conf.plugins.updater.endpoints.every(url => url.includes('Mickls/cockpit-tools')), true);
+  assert.equal(conf.plugins.updater.endpoints.every(url => url.startsWith(`https://github.com/${REPO}/releases/`)), true);
   assert.equal(conf.plugins.updater.endpoints.some(url => url.includes('jlcodes99/cockpit-tools')), false);
   assert.ok(conf.plugins.updater.pubkey.length > 40);
 });
