@@ -4,10 +4,11 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { uploadReleaseAssets } = require('./upload_release_assets.cjs');
 const { REPO } = require('./custom-repository.cjs');
+const { findRelease } = require('./custom-release-lookup.cjs');
 
 function defaultGh(args) {
   const result = spawnSync('gh', args, { encoding: 'utf8', timeout: 120000, maxBuffer: 4 * 1024 * 1024 });
-  if (result.error || result.status !== 0) throw new Error(result.stderr || result.error?.message || 'GitHub operation failed');
+  if (result.error || result.status !== 0) throw new Error(`gh ${args.slice(0, 2).join(' ')}: ${result.stderr || result.error?.message || 'GitHub operation failed'}`);
   return result.stdout.trim();
 }
 function releaseFiles(root) {
@@ -29,12 +30,15 @@ function releaseFiles(root) {
   return names.map(name => ({ name, file: path.join(dir, name), size: fs.statSync(path.join(dir, name)).size,
     digest: 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, name))).digest('hex') }));
 }
+function uploadedAssetMatches(asset, file) {
+  return asset?.state === 'uploaded' && asset.size === file.size && asset.digest === file.digest;
+}
 function verifyRemote(release, files, identity) {
   if (release.target_commitish !== identity.commit) throw new Error('Release source mismatch');
   if (release.assets.length !== files.length) throw new Error('Remote release asset set is incomplete');
   for (const file of files) {
     const asset = release.assets.find(a => a.name === file.name);
-    if (!asset || asset.size !== file.size || (asset.digest && asset.digest !== file.digest)) throw new Error(`Remote asset mismatch: ${file.name}`);
+    if (!uploadedAssetMatches(asset, file)) throw new Error(`Remote asset mismatch: ${file.name}`);
   }
 }
 function newerTag(a, b) {
@@ -47,28 +51,34 @@ function newerTag(a, b) {
 async function publish(root, { gh = defaultGh, upload = uploadReleaseAssets, repo = process.env.GITHUB_REPOSITORY } = {}) {
   if (repo !== REPO) throw new Error('Refusing publication outside the custom repository');
   const identity = JSON.parse(fs.readFileSync(path.join(root, 'custom-release.json'), 'utf8'));
+  if (!/^2\.0\.\d+$/.test(identity.version) || !/^[a-f0-9]{40}$/.test(identity.commit)) throw new Error('Invalid release identity');
   const tag = `v${identity.version}`;
   const files = releaseFiles(root);
-  const lookup = () => JSON.parse(gh(['api', `repos/${repo}/releases/tags/${tag}`]));
-  let release;
-  try { release = lookup(); }
-  catch (error) { if (!error.message.includes('HTTP 404')) throw error; }
+  const lookup = () => findRelease(gh, repo, tag);
+  let release = lookup();
   if (release && release.target_commitish !== identity.commit) throw new Error('Release source mismatch');
   if (release && !release.draft) { verifyRemote(release, files, identity); return 'already-published'; }
   if (!release) {
-    gh(['release', 'create', tag, '--target', identity.commit, '--draft', '--title', `Cockpit Tools ${identity.version}`, '--notes-file', path.join(root, 'release-notes.md')]);
+    gh(['release', 'create', tag, '--repo', repo, '--target', identity.commit, '--draft', '--title', `Cockpit Tools ${identity.version}`, '--notes-file', path.join(root, 'release-notes.md')]);
+    release = lookup();
   }
-  await upload(tag, files.map(f => f.file));
-  release = lookup();
+  if (!release?.draft || release.target_commitish !== identity.commit || !Number.isSafeInteger(release.id)) throw new Error('Expected a matching release draft');
+  const releasePath = `repos/${repo}/releases/${release.id}`;
+  const missing = files.filter(file => !uploadedAssetMatches(release.assets.find(asset => asset.name === file.name), file));
+  if (missing.length) {
+    await upload(tag, missing.map(f => f.file), { repo });
+    release = JSON.parse(gh(['api', releasePath]));
+  }
+  if (!release.draft || release.tag_name !== tag) throw new Error('Release draft changed before publication');
   verifyRemote(release, files, identity);
   let latest;
   try { latest = JSON.parse(gh(['api', `repos/${repo}/releases/latest`])); }
   catch (error) { if (!error.message.includes('HTTP 404')) throw error; }
   const makeLatest = !latest || !newerTag(latest.tag_name, tag);
   // Draft is only a staging state; publish as soon as the complete set is verified.
-  gh(['release', 'edit', tag, '--draft=false', `--latest=${makeLatest}`, '--title', `Cockpit Tools ${identity.version}`, '--notes-file', path.join(root, 'release-notes.md')]);
-  const published = lookup();
-  if (published.draft) throw new Error('Release was not published');
+  gh(['api', releasePath, '--method', 'PATCH', '-F', 'draft=false', '-f', `make_latest=${makeLatest}`]);
+  const published = JSON.parse(gh(['api', releasePath]));
+  if (published.draft || published.tag_name !== tag) throw new Error('Release was not published');
   verifyRemote(published, files, identity);
   return 'published';
 }

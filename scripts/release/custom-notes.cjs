@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 const { REPO } = require('./custom-repository.cjs');
+const { findRelease } = require('./custom-release-lookup.cjs');
 
 function composeNotes(customNotes, upstreamNotes) {
   const custom = customNotes.map(s => s.trim()).filter(Boolean);
@@ -21,13 +22,15 @@ function collectNotes(root, identity) {
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
   // Reuse the snapshot from an existing release on reruns, including partial
   // uploads. Advancing latest must not rewrite an older build's notes.
-  const existing = spawnSync('gh', ['api', `repos/${REPO}/releases/tags/v${identity.version}`], { cwd: root, encoding: 'utf8' });
-  if (existing.status === 0) {
-    const pinned = JSON.parse(existing.stdout);
+  const pinned = findRelease(args => {
+    const result = spawnSync('gh', args, { cwd: root, encoding: 'utf8' });
+    if (result.status !== 0) throw new Error(result.stderr || result.error?.message || 'Could not inspect existing release notes');
+    return result.stdout;
+  }, REPO, `v${identity.version}`);
+  if (pinned) {
     if (pinned.target_commitish !== identity.commit || !pinned.body?.trim()) throw new Error('Existing release notes/source mismatch');
     return pinned.body;
   }
-  if (!existing.stderr.includes('HTTP 404')) throw new Error('Could not inspect existing release notes');
   const official = (file) => git('show', `${identity.upstreamCommit}:${file}`);
   const version = JSON.parse(official('package.json')).version;
   let upstream;

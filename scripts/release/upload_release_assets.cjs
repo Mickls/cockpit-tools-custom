@@ -41,6 +41,7 @@ async function uploadReleaseAssets(tag, files, options = {}) {
   const run = options.run || runGh;
   const wait = options.wait || sleep;
   const log = options.log || console.log;
+  const repoArgs = options.repo ? ["--repo", options.repo] : [];
   const maxAttempts = options.maxAttempts ?? MAX_ATTEMPTS;
   const delayMs = options.delayMs ?? RETRY_DELAY_MS;
   if (!/^v\d+\.\d+\.\d+$/.test(tag) || !files.length) {
@@ -62,14 +63,14 @@ async function uploadReleaseAssets(tag, files, options = {}) {
   // that already succeeded. --clobber repairs an ambiguous/partial failed upload.
   for (const asset of assets) {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      let result = run(["release", "view", tag, "--json", "isDraft", "--jq", ".isDraft"]);
+      let result = run(["release", "view", tag, ...repoArgs, "--json", "isDraft", "--jq", ".isDraft"]);
       let phase = "release lookup";
       if (result.status === 0 && !result.error) {
         if (result.stdout.trim() !== "true") {
           throw new Error(`Release ${tag} is not a draft; refusing to mutate a published release.`);
         }
         phase = "asset upload";
-        result = run(["release", "upload", tag, "--clobber", "--", asset]);
+        result = run(["release", "upload", tag, ...repoArgs, "--clobber", "--", asset]);
         if (result.status === 0 && !result.error) {
           log(`Uploaded ${path.basename(asset)} to ${tag}`);
           break;
