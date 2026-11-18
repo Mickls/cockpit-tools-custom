@@ -78,7 +78,9 @@ async function uploadReleaseAssets(tag, files, options = {}) {
       }
 
       const detail = commandFailure(result);
-      if (!isRetryableFailure(result) || attempt === maxAttempts) {
+      // The caller has verified the draft by ID, but gh resolves the tag separately.
+      const draftNotVisible = options.retryDraftVisibility === true && /\bHTTP\s+404\b/i.test(detail);
+      if ((!draftNotVisible && !isRetryableFailure(result)) || attempt === maxAttempts) {
         throw new Error(`${phase} failed for ${path.basename(asset)} (${attempt}/${maxAttempts}): ${detail}`);
       }
       const backoff = delayMs * (2 ** (attempt - 1));

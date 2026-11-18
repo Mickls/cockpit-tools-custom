@@ -59,14 +59,20 @@ async function publish(root, { gh = defaultGh, upload = uploadReleaseAssets, rep
   if (release && release.target_commitish !== identity.commit) throw new Error('Release source mismatch');
   if (release && !release.draft) { verifyRemote(release, files, identity); return 'already-published'; }
   if (!release) {
-    gh(['release', 'create', tag, '--repo', repo, '--target', identity.commit, '--draft', '--title', `Cockpit Tools ${identity.version}`, '--notes-file', path.join(root, 'release-notes.md')]);
-    release = lookup();
+    // Use the create response: the releases list can lag behind draft creation.
+    release = JSON.parse(gh(['api', `repos/${repo}/releases`, '--method', 'POST',
+      '-f', `tag_name=${tag}`, '-f', `target_commitish=${identity.commit}`, '-F', 'draft=true',
+      '-f', `name=Cockpit Tools ${identity.version}`,
+      '-f', `body=${fs.readFileSync(path.join(root, 'release-notes.md'), 'utf8')}`]));
   }
-  if (!release?.draft || release.target_commitish !== identity.commit || !Number.isSafeInteger(release.id)) throw new Error('Expected a matching release draft');
+  if (release?.draft !== true || release.tag_name !== tag || release.target_commitish !== identity.commit
+    || !Number.isSafeInteger(release.id) || release.id <= 0 || !Array.isArray(release.assets)) {
+    throw new Error(`GitHub did not return a matching draft for ${tag} at ${identity.commit}`);
+  }
   const releasePath = `repos/${repo}/releases/${release.id}`;
   const missing = files.filter(file => !uploadedAssetMatches(release.assets.find(asset => asset.name === file.name), file));
   if (missing.length) {
-    await upload(tag, missing.map(f => f.file), { repo });
+    await upload(tag, missing.map(f => f.file), { repo, retryDraftVisibility: true });
     release = JSON.parse(gh(['api', releasePath]));
   }
   if (!release.draft || release.tag_name !== tag) throw new Error('Release draft changed before publication');

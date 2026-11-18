@@ -138,6 +138,20 @@ test("unknown draft state and invalid local files cannot reach mutation", async 
   }), /ENOENT/);
 });
 
+test("a draft confirmed by ID tolerates a temporary tag lookup 404", async (t) => {
+  const calls = [];
+  await uploadReleaseAssets("v2.0.1294", assets(t, ["asset.zip"]), {
+    retryDraftVisibility: true,
+    run(args) {
+      calls.push(args[1]);
+      return calls.length === 1 ? failure("HTTP 404") : success(args[1] === "view" ? "true" : "");
+    },
+    wait: async () => {},
+    log() {},
+  });
+  assert.deepEqual(calls, ["view", "view", "upload"]);
+});
+
 test("CLI failures exit nonzero before any remote operation", () => {
   const result = spawnSync(process.execPath, [path.join(__dirname, "upload_release_assets.cjs")], { encoding: "utf8" });
   assert.ifError(result.error);

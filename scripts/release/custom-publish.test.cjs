@@ -42,10 +42,12 @@ function mockGitHub(f, initialRelease, { latest, onPublish = () => {} } = {}) {
   const calls = [];
   const gh = args => {
     calls.push(args);
-    if (args[0] === 'release' && args[1] === 'create') {
+    if (args[1].endsWith('/releases') && args.includes('POST')) {
       assert.equal(remote, undefined);
+      assert.ok(args.includes('draft=true'));
+      assert.ok(args.includes(`target_commitish=${f.identity.commit}`));
       remote = draft(f);
-      return '';
+      return JSON.stringify(remote);
     }
     assert.equal(args[0], 'api');
     if (args[1].endsWith('/releases/latest')) {
@@ -56,7 +58,7 @@ function mockGitHub(f, initialRelease, { latest, onPublish = () => {} } = {}) {
       if (!remote || remote.draft) throw new Error('HTTP 404');
       return JSON.stringify(remote);
     }
-    if (args[1].endsWith('/releases?per_page=100')) return remote ? '42' : '';
+    if (args[1].endsWith('/releases?per_page=100')) return initialRelease ? '42' : '';
     assert.match(args[1], /\/releases\/42$/);
     if (args.includes('PATCH')) {
       onPublish(args);
@@ -66,7 +68,7 @@ function mockGitHub(f, initialRelease, { latest, onPublish = () => {} } = {}) {
   };
   return { gh, calls, get remote() { return remote; } };
 }
-test('verified release publishes only after uploads and remote verification', async t => {
+test('a new draft publishes even when the releases list has not indexed it yet', async t => {
   const f = fixture(t); let uploaded = false;
   const mock = mockGitHub(f, undefined, { latest: 'v2.0.2', onPublish: args => {
     assert.ok(uploaded); assert.ok(args.includes('draft=false')); assert.ok(args.includes('make_latest=false'));
