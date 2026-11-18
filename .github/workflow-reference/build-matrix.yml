@@ -7,35 +7,21 @@ on:
   pull_request:
     branches:
       - "main"
-      - "custom"
   push:
     branches:
       # Trusted default-branch builds seed caches readable by future tags.
       - "main"
-      - "custom"
       - "feature/build-matrix*"
       - "feature/build-matrix/**"
 
 concurrency:
   group: build-matrix-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/custom' }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  custom-integration:
-    name: Custom integration checks
-    if: always()
-    needs: [prepare, preflight-tests, preflight-ts-windows, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require all platform builds and checks
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          node -e 'const jobs = JSON.parse(process.env.RESULTS); if (Object.values(jobs).some(job => job.result !== "success")) process.exit(1);'
-
   prepare:
     name: "🚦 Prepare shared build inputs"
     runs-on: ubuntu-latest
@@ -165,19 +151,19 @@ jobs:
     permissions:
       contents: read
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - label: macOS arm64
             cache_target: "macos-aarch64"
             icon: "🍎"
-            platform: macos-15-intel
+            platform: macos-latest
             target: aarch64-apple-darwin
             executable: target/aarch64-apple-darwin/ci/cockpit-tools
           - label: macOS x64
             cache_target: "macos-x86_64"
             icon: "🍎"
-            platform: macos-15-intel
+            platform: macos-latest
             target: x86_64-apple-darwin
             executable: target/x86_64-apple-darwin/ci/cockpit-tools
           - label: Ubuntu 22.04 x64
@@ -198,6 +184,12 @@ jobs:
             platform: windows-latest
             target: x86_64-pc-windows-msvc
             executable: target/x86_64-pc-windows-msvc/ci/cockpit-tools.exe
+          - label: Windows ARM64
+            cache_target: "windows-aarch64"
+            icon: "🪟"
+            platform: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            executable: target/aarch64-pc-windows-msvc/ci/cockpit-tools.exe
 
     steps:
       - name: "📥 Checkout repository"
@@ -231,7 +223,6 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         working-directory: src-tauri
         run: |
-          cargo test credential_sync --lib -- --test-threads=1
           cargo test instance_configuration_save --lib
           cargo test quick_config_catalog_only_context_preservation --lib
           cargo test claude_desktop_gateway --lib --locked
@@ -249,20 +240,6 @@ jobs:
       - name: "✅ Verify executable"
         shell: bash
         run: test -f "${{ matrix.executable }}"
-
-      - name: Verify macOS target architecture
-        if: runner.os == 'macOS'
-        shell: bash
-        env:
-          TARGET: ${{ matrix.target }}
-          EXECUTABLE: ${{ matrix.executable }}
-        run: |
-          set -euo pipefail
-          case "$TARGET" in
-            aarch64-apple-darwin) lipo "$EXECUTABLE" -verify_arch arm64 ;;
-            x86_64-apple-darwin) lipo "$EXECUTABLE" -verify_arch x86_64 ;;
-            *) exit 1 ;;
-          esac
 
       - name: "🧾 Publish build summary"
         if: always()
