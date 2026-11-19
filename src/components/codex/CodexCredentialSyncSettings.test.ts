@@ -11,6 +11,9 @@ function harness(paired=false){
   loadCodexCredentialSyncSettings:async()=>settings,
   saveCodexCredentialSyncSettings:async(s:typeof settings)=>{calls.push(['save',s]);if(failSave)throw new Error('save failed');settings=s;return s;},
   listCodexCredentialSyncAccounts:async()=>[{id:'account-a',email:'a@example.test'}],
+  syncAccountDisplayName:(account:{email:string;accountName?:string})=>account.accountName?`${account.accountName} (${account.email})`:account.email,
+  manualUploadCodexCredential:async(id:string)=>{calls.push(['upload',id]);},
+  manualSyncCodexCredential:async(id:string)=>{calls.push(['recover',id]);return true;},
   normalizeCodexCredentialSyncUrl:(s:string)=>s.trim().replace(/\/+$/,''),
   enrollCodexCredentialSyncDevice:async(code:string)=>{calls.push(['enroll',code]);return settings;},
   restoreCodexCredentialSyncRecovery:async(code:string,recovery:string)=>{calls.push(['restore',{code,recovery}]);settings={...settings,paired:true};return settings;},
@@ -41,4 +44,16 @@ test('an unpaired device can enter an offline recovery code and clears it after 
 });
 test('recovery keys are not requested until the user explicitly exports them',async()=>{
  const x=harness(true);await settlePromises();x.h.flush();assert.equal(x.calls.length,0);x.click('codex.credentialSync.exportRecovery');await settlePromises();assert.equal(x.find('codex.credentialSync.recoveryCode').props.value,'recovery-secret-fixture');x.h.unmount();
+});
+test('account row actions address the account directly without a selection dropdown',async()=>{
+ const x=harness(true);await settlePromises();const output=x.h.flush();
+ assert.ok(!elements(output).some(e=>e.type==='select'));
+ const upload=elements(output).find(e=>e.type==='button'&&e.props['aria-label']==='codex.credentialSync.upload a@example.test');
+ assert.ok(upload);upload.props.onClick!();await settlePromises();x.h.flush();
+ assert.deepEqual(x.calls.find(c=>c[0]==='upload'),['upload','account-a']);
+ const recover=elements(x.h.flush()).find(e=>e.type==='button'&&e.props['aria-label']==='codex.credentialSync.recover a@example.test');
+ assert.ok(recover);recover.props.onClick!();await settlePromises();x.h.flush();
+ assert.deepEqual(x.calls.find(c=>c[0]==='recover'),['recover','account-a']);
+ assert.ok(elements(x.h.flush()).some(e=>e.props.role==='tooltip'));
+ x.h.unmount();
 });

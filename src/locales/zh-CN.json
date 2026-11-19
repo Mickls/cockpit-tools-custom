@@ -6895,6 +6895,10 @@
       "legacyReasonCheck": "后台检查"
     },
     "credentialSync": {
+      "authError": "授权异常",
+      "authUnknown": "授权状态待确认",
+      "authHealthy": "授权正常",
+      "recoveryHelp": "用于所有已配对设备丢失或重装后的应急恢复。请将恢复码保存在密码管理器。使用时在未配对客户端展开「使用恢复码恢复」，填写离线恢复码和服务器签发的一次性登记码；只能恢复已有的可用备份，不能重新授权已失效的账号。",
       "longCode": "获取长期配对码",
       "replaceCode": "更换配对码",
       "confirmReplace": "确认更换（旧码将失效）",

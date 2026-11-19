@@ -6895,6 +6895,10 @@
       "legacyReasonCheck": "Background check"
     },
     "credentialSync": {
+      "authError": "Authorization error",
+      "authUnknown": "Authorization not confirmed",
+      "authHealthy": "Authorized",
+      "recoveryHelp": "Emergency access if all paired devices are lost or reinstalled. Store this code in a password manager. On an unpaired client, expand recovery and enter the offline recovery code plus a one-time server enrollment code. It unlocks existing usable backups; it cannot renew revoked account authorization.",
       "longCode": "Get pairing code",
       "replaceCode": "Replace pairing code",
       "confirmReplace": "Confirm replacement (the old code will expire)",

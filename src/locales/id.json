@@ -6700,6 +6700,10 @@
       "legacyReasonCheck": "Pemeriksaan latar"
     },
     "credentialSync": {
+      "authError": "Kesalahan otorisasi",
+      "authUnknown": "Otorisasi belum dikonfirmasi",
+      "authHealthy": "Diotorisasi",
+      "recoveryHelp": "Pemulihan darurat jika semua perangkat yang disandingkan hilang atau diinstal ulang. Simpan kode di pengelola kata sandi. Pada klien yang belum disandingkan, buka pemulihan dan masukkan kode ini serta kode pendaftaran sekali pakai dari server. Hanya membuka cadangan yang masih dapat digunakan, bukan memperbarui otorisasi yang dicabut.",
       "longCode": "Dapatkan kode penyandingan",
       "replaceCode": "Ganti kode penyandingan",
       "confirmReplace": "Konfirmasi penggantian (kode lama tidak berlaku)",

@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Verificação em segundo plano"
     },
     "credentialSync": {
+      "authError": "Erro de autorização",
+      "authUnknown": "Autorização não confirmada",
+      "authHealthy": "Autorizado",
+      "recoveryHelp": "Recuperação de emergência se todos os dispositivos pareados forem perdidos ou reinstalados. Guarde o código em um gerenciador de senhas. Em um cliente não pareado, abra a recuperação e informe este código e um código de registro de uso único do servidor. Desbloqueia backups utilizáveis existentes, mas não renova autorizações revogadas.",
       "longCode": "Obter código de pareamento",
       "replaceCode": "Substituir código de pareamento",
       "confirmReplace": "Confirmar substituição (o código antigo deixará de funcionar)",

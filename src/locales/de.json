@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Hintergrundprüfung"
     },
     "credentialSync": {
+      "authError": "Autorisierungsfehler",
+      "authUnknown": "Autorisierung unbestätigt",
+      "authHealthy": "Autorisiert",
+      "recoveryHelp": "Notfallzugang, wenn alle gekoppelten Geräte verloren oder neu installiert sind. Code im Passwortmanager speichern. Auf einem ungekoppelten Client die Wiederherstellung öffnen und Offline-Code sowie einmaligen Registrierungscode des Servers eingeben. Entsperrt vorhandene nutzbare Sicherungen, erneuert aber keine widerrufene Kontoautorisierung.",
       "longCode": "Kopplungscode abrufen",
       "replaceCode": "Kopplungscode ersetzen",
       "confirmReplace": "Ersetzen bestätigen (alter Code wird ungültig)",

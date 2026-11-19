@@ -24,7 +24,21 @@ export const approveCodexCredentialSyncPairing = (pairingId: string) => invoke<v
 export interface SyncDevice { device_id: string; public_key: string; revoked: boolean; online: boolean }
 export const listCodexCredentialSyncDevices = () => invoke<{devices:SyncDevice[]}>('codex_credential_sync_devices');
 export const revokeCodexCredentialSyncDevice = (deviceId: string) => invoke<void>('codex_credential_sync_revoke', { deviceId });
-export const listCodexCredentialSyncAccounts = () => invoke<Array<{id:string;email:string}>>('codex_credential_sync_accounts');
+export interface SyncAccount {
+  id: string;
+  email: string;
+  accountName?: string | null;
+  planType?: string | null;
+  accountId?: string | null;
+  requiresReauth?: boolean;
+  hasQuotaError?: boolean;
+  usageUpdatedAt?: number | null;
+}
+export function syncAccountDisplayName(account: SyncAccount): string {
+  const name = account.accountName?.trim();
+  return name && name !== account.email ? `${name} (${account.email})` : account.email;
+}
+export const listCodexCredentialSyncAccounts = () => invoke<SyncAccount[]>('codex_credential_sync_accounts');
 export const exportCodexCredentialSyncRecovery = () => invoke<string>('codex_credential_sync_export_recovery');
 export const restoreCodexCredentialSyncRecovery = (code: string, recoveryCode: string) => invoke<CodexCredentialSyncSettings>('codex_credential_sync_restore_recovery', { code, recoveryCode });
 export function normalizeCodexCredentialSyncUrl(value: string): string { return value.trim().replace(/\/+$/, ''); }

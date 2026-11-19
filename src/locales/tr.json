@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Arka plan kontrolü"
     },
     "credentialSync": {
+      "authError": "Yetkilendirme hatası",
+      "authUnknown": "Yetkilendirme doğrulanmadı",
+      "authHealthy": "Yetkilendirildi",
+      "recoveryHelp": "Tüm eşleştirilmiş cihazlar kaybolduğunda veya yeniden kurulduğunda acil kurtarma içindir. Kodu parola yöneticisinde saklayın. Eşleştirilmemiş istemcide kurtarmayı açıp bu kodu ve sunucunun verdiği tek kullanımlık kayıt kodunu girin. Mevcut kullanılabilir yedekleri açar; iptal edilmiş hesap yetkisini yenilemez.",
       "longCode": "Eşleştirme kodu al",
       "replaceCode": "Eşleştirme kodunu değiştir",
       "confirmReplace": "Değişikliği onayla (eski kod geçersiz olacak)",

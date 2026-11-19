@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Sprawdzenie w tle"
     },
     "credentialSync": {
+      "authError": "Błąd autoryzacji",
+      "authUnknown": "Autoryzacja niepotwierdzona",
+      "authHealthy": "Autoryzowano",
+      "recoveryHelp": "Awaryjne odzyskiwanie po utracie lub ponownej instalacji wszystkich sparowanych urządzeń. Zachowaj kod w menedżerze haseł. Na niesparowanym kliencie otwórz odzyskiwanie i podaj ten kod oraz jednorazowy kod rejestracji serwera. Odblokowuje istniejące użyteczne kopie; nie odnawia cofniętej autoryzacji konta.",
       "longCode": "Pobierz kod parowania",
       "replaceCode": "Zmień kod parowania",
       "confirmReplace": "Potwierdź zmianę (stary kod straci ważność)",

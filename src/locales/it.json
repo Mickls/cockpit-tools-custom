@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Controllo in background"
     },
     "credentialSync": {
+      "authError": "Errore di autorizzazione",
+      "authUnknown": "Autorizzazione non confermata",
+      "authHealthy": "Autorizzato",
+      "recoveryHelp": "Accesso di emergenza se tutti i dispositivi abbinati vengono persi o reinstallati. Conserva il codice in un gestore di password. Su un client non abbinato, apri il ripristino e inserisci questo codice e un codice di registrazione monouso del server. Sblocca i backup utilizzabili esistenti; non rinnova le autorizzazioni revocate.",
       "longCode": "Ottieni codice di abbinamento",
       "replaceCode": "Sostituisci codice di abbinamento",
       "confirmReplace": "Conferma sostituzione (il vecchio codice non sarà più valido)",

@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Kontrola na pozadí"
     },
     "credentialSync": {
+      "authError": "Chyba autorizace",
+      "authUnknown": "Autorizace nepotvrzena",
+      "authHealthy": "Autorizováno",
+      "recoveryHelp": "Nouzová obnova při ztrátě nebo přeinstalaci všech spárovaných zařízení. Kód uložte do správce hesel. V nespárovaném klientu otevřete obnovu a zadejte offline kód a jednorázový registrační kód serveru. Odemkne existující použitelné zálohy; neobnoví zrušené oprávnění účtu.",
       "longCode": "Získat párovací kód",
       "replaceCode": "Vyměnit párovací kód",
       "confirmReplace": "Potvrdit výměnu (starý kód přestane platit)",
