@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Vérification en arrière-plan"
     },
     "credentialSync": {
+      "authError": "Erreur d’autorisation",
+      "authUnknown": "Autorisation non confirmée",
+      "authHealthy": "Autorisé",
+      "recoveryHelp": "Accès de secours si tous les appareils associés sont perdus ou réinstallés. Conservez le code dans un gestionnaire de mots de passe. Sur un client non associé, ouvrez la récupération et saisissez ce code et un code d’inscription à usage unique du serveur. Déverrouille les sauvegardes utilisables existantes sans renouveler une autorisation révoquée.",
       "longCode": "Obtenir le code d’association",
       "replaceCode": "Remplacer le code d’association",
       "confirmReplace": "Confirmer (l’ancien code ne fonctionnera plus)",

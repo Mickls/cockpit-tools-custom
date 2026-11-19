@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "背景檢查"
     },
     "credentialSync": {
+      "authError": "授權異常",
+      "authUnknown": "授權狀態待確認",
+      "authHealthy": "授權正常",
+      "recoveryHelp": "用於所有已配對裝置遺失或重裝後的緊急復原。請將復原碼保存在密碼管理器。使用時在未配對客戶端展開「使用復原碼復原」，輸入離線復原碼及伺服器簽發的一次性登記碼；只能復原已有的可用備份，無法重新授權已失效的帳號。",
       "longCode": "取得長期配對碼",
       "replaceCode": "更換配對碼",
       "confirmReplace": "確認更換（舊碼將失效）",

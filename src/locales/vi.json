@@ -6653,6 +6653,10 @@
       "legacyReasonCheck": "Kiểm tra nền"
     },
     "credentialSync": {
+      "authError": "Lỗi xác thực",
+      "authUnknown": "Chưa xác nhận xác thực",
+      "authHealthy": "Xác thực bình thường",
+      "recoveryHelp": "Khôi phục khẩn cấp khi mất hoặc cài lại tất cả thiết bị đã ghép nối. Lưu mã trong trình quản lý mật khẩu. Trên ứng dụng chưa ghép nối, mở khôi phục rồi nhập mã này và mã đăng ký dùng một lần do máy chủ cấp. Chỉ mở các bản sao lưu hiện có còn dùng được, không gia hạn quyền truy cập đã bị thu hồi.",
       "longCode": "Lấy mã ghép nối",
       "replaceCode": "Thay mã ghép nối",
       "confirmReplace": "Xác nhận thay mã (mã cũ sẽ hết hiệu lực)",

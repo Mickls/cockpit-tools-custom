@@ -33,6 +33,11 @@ pub async fn codex_credential_sync_restore_recovery(code:String,recovery_code:St
 #[tauri::command]
 pub fn codex_credential_sync_accounts()->Vec<serde_json::Value>{
     crate::modules::codex_account::load_account_index().accounts.into_iter().filter_map(|a|{
-        crate::modules::codex_account::credential_sync_snapshot(&a.id,false).ok().map(|_|serde_json::json!({"id":a.id,"email":a.email}))
+        crate::modules::codex_account::credential_sync_snapshot(&a.id,false).ok().map(|account|serde_json::json!({
+            "id":account.id,"email":account.email,"accountName":account.account_name,
+            "planType":account.plan_type,"accountId":account.account_id,
+            "requiresReauth":account.requires_reauth,"hasQuotaError":account.quota_error.is_some(),
+            "usageUpdatedAt":account.usage_updated_at
+        }))
     }).collect()
 }

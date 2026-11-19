@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { HelpCircle, Upload, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as sync from '../../services/codexCredentialSyncService';
 import './CodexCredentialSync.css';
@@ -10,13 +11,37 @@ export function CodexCredentialSyncSettings() {
  const [serverDraft,setServerDraft]=useState('');
  const [code,setCode]=useState('');const [invite,setInvite]=useState('');const [recoveryCode,setRecoveryCode]=useState('');const [recoveryEnrollment,setRecoveryEnrollment]=useState('');const [pending,setPending]=useState<Pairing[]>([]);
  const [longCode,setLongCode]=useState('');const [confirmReplace,setConfirmReplace]=useState(false);const [showLongCode,setShowLongCode]=useState(false);
- const [accounts,setAccounts]=useState<Array<{id:string;email:string}>>([]);const [selected,setSelected]=useState('');
+ const [accounts,setAccounts]=useState<sync.SyncAccount[]>([]);
+ const [accountResults,setAccountResults]=useState<Record<string,{message:string;error:boolean}>>({});
+ const [activeAccount,setActiveAccount]=useState('');
+ const recoveryHelpId=useId();
  const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [message,setMessage]=useState('');
  const [devices,setDevices]=useState<sync.SyncDevice[]>([]);const [revokeTarget,setRevokeTarget]=useState('');
- const refresh=async()=>{setSettings(await sync.loadCodexCredentialSyncSettings());};
+ const refresh=async()=>{const [next,items]=await Promise.all([sync.loadCodexCredentialSyncSettings(),sync.listCodexCredentialSyncAccounts()]);setSettings(next);setAccounts(items);};
  useEffect(()=>{void sync.loadCodexCredentialSyncSettings().then(s=>{setSettings(s);setServerDraft(s.serverUrl);}).catch(e=>setError(String(e)));void sync.listCodexCredentialSyncAccounts().then(setAccounts).catch(e=>setError(String(e)));},[]);
  useEffect(()=>{if(!settings.enabled)return;const timer=setInterval(()=>{void refresh().catch(()=>undefined);},5000);return()=>clearInterval(timer);},[settings.enabled]);
  const run=async(operation:()=>Promise<unknown>)=>{if(busy)return;setBusy(true);setError('');setMessage('');try{await operation();const next=await sync.loadCodexCredentialSyncSettings();setSettings(next);setServerDraft(next.serverUrl);}catch(e){setError(String(e));}finally{setBusy(false);}};
+ const accountAction=(account:sync.SyncAccount,action:'upload'|'recover')=>run(async()=>{
+  setActiveAccount(account.id);
+  setAccountResults(previous=>{const next={...previous};delete next[account.id];return next;});
+  try{
+   let text:string;
+   let failed=false;
+   if(action==='upload'){await sync.manualUploadCodexCredential(account.id);text=t('codex.credentialSync.uploaded');}
+   else{
+    const ok=await sync.manualSyncCodexCredential(account.id);
+    const next=await sync.loadCodexCredentialSyncSettings();
+    text=next.recoveryStatus?.[account.id]??t(ok?'codex.credentialSync.recovered':'codex.credentialSync.exhausted');
+    failed=!ok;
+   }
+   setAccountResults(previous=>({...previous,[account.id]:{message:text,error:failed}}));
+  }catch(cause){
+   setAccountResults(previous=>({...previous,[account.id]:{message:String(cause),error:true}}));
+  }finally{
+   setActiveAccount('');
+   await refresh();
+  }
+ });
  return <div className="settings-row credential-sync-settings">
   <div className="row-label"><div className="row-title">{t('codex.credentialSync.title')}</div><div className="row-desc">{t('codex.credentialSync.desc')}</div></div>
   <div className="row-control credential-sync-controls">
@@ -42,13 +67,34 @@ export function CodexCredentialSyncSettings() {
     {pending.map(p=><div key={p.pairing_id}><small>{p.device_id}<br/>{p.public_key}<br/>{p.box_public_key}</small><button className="btn btn-sm" disabled={busy} onClick={()=>void run(async()=>{await sync.approveCodexCredentialSyncPairing(p.pairing_id);setPending(v=>v.filter(x=>x.pairing_id!==p.pairing_id));})}>{t('codex.credentialSync.approve')}</button></div>)}
     <button className="btn btn-sm" disabled={busy} onClick={()=>void run(async()=>setDevices((await sync.listCodexCredentialSyncDevices()).devices))}>{t('codex.credentialSync.devices')}</button>
     {devices.map(d=><div key={d.device_id}><small>{d.device_id}{d.revoked?` · ${t('codex.credentialSync.revoked')}`:''}</small>{!d.revoked&&d.device_id!==settings.deviceId&&<button className="btn btn-sm" disabled={busy} onClick={()=>{if(revokeTarget!==d.device_id){setRevokeTarget(d.device_id);return;}void run(async()=>{await sync.revokeCodexCredentialSyncDevice(d.device_id);setDevices((await sync.listCodexCredentialSyncDevices()).devices);setRevokeTarget('');});}}>{t(revokeTarget===d.device_id?'common.confirm':'codex.credentialSync.revoke')}</button>}</div>)}
-    <select aria-label={t('codex.credentialSync.account')} className="select select-bordered select-sm" value={selected} onChange={e=>setSelected(e.target.value)}><option value="">{t('codex.credentialSync.account')}</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.email}</option>)}</select>
-    <div style={{display:'flex',gap:6}}><button className="btn btn-sm" disabled={busy||!selected} onClick={()=>void run(async()=>{await sync.manualUploadCodexCredential(selected);setMessage(t('codex.credentialSync.uploaded'));})}>{t('codex.credentialSync.upload')}</button><button className="btn btn-sm" disabled={busy||!selected} onClick={()=>void run(async()=>{const ok=await sync.manualSyncCodexCredential(selected);setMessage(t(ok?'codex.credentialSync.recovered':'codex.credentialSync.exhausted'));})}>{t('codex.credentialSync.recover')}</button></div>
+    <ul className="credential-sync-account-list">
+     {accounts.map(account=>{
+      const label=sync.syncAccountDisplayName(account);
+      const status=account.requiresReauth?'authError':account.hasQuotaError||!account.usageUpdatedAt?'authUnknown':'authHealthy';
+      const result=accountResults[account.id];
+      return <li key={account.id} className="credential-sync-account-row" aria-label={label} aria-busy={activeAccount===account.id}>
+       <div className="credential-sync-account-info">
+        <strong className="credential-sync-account-name">{label}</strong>
+        <span className={`credential-sync-account-status ${status}`}>{t(`codex.credentialSync.${status}`)}</span>
+        {result?<small role={result.error?'alert':'status'}>{result.message}</small>:settings.recoveryStatus?.[account.id]&&<small>{settings.recoveryStatus[account.id]}</small>}
+       </div>
+       <div className="credential-sync-account-buttons">
+        <button type="button" className="btn btn-sm" aria-label={`${t('codex.credentialSync.upload')} ${label}`} disabled={busy||!settings.enabled} onClick={()=>void accountAction(account,'upload')}><Upload size={14}/>{t('codex.credentialSync.upload')}</button>
+        <button type="button" className="btn btn-sm" aria-label={`${t('codex.credentialSync.recover')} ${label}`} disabled={busy||!settings.enabled} onClick={()=>void accountAction(account,'recover')}><RotateCcw size={14}/>{t('codex.credentialSync.recover')}</button>
+       </div>
+      </li>;
+     })}
+    </ul>
     </details>
    </>}
    {!!settings.pendingUploads?.length&&<small>{t('codex.credentialSync.pending',{count:settings.pendingUploads.length})}</small>}
-   {selected&&settings.recoveryStatus?.[selected]&&<small>{settings.recoveryStatus[selected]}</small>}
-   {settings.paired?<button className="btn btn-sm" disabled={busy} onClick={()=>void run(async()=>{setRecoveryCode(await sync.exportCodexCredentialSyncRecovery());})}>{t('codex.credentialSync.exportRecovery')}</button>:<>
+   {settings.paired?<div className="credential-sync-recovery-export">
+    <button className="btn btn-sm" disabled={busy} onClick={()=>void run(async()=>{setRecoveryCode(await sync.exportCodexCredentialSyncRecovery());})}>{t('codex.credentialSync.exportRecovery')}</button>
+    <span className="credential-sync-help">
+     <button type="button" className="credential-sync-help-trigger" aria-label={t('codex.credentialSync.recoveryHelp')} aria-describedby={recoveryHelpId}><HelpCircle size={16}/></button>
+     <span role="tooltip" id={recoveryHelpId}>{t('codex.credentialSync.recoveryHelp')}</span>
+    </span>
+   </div>:<>
     <details><summary>{t('codex.credentialSync.restoreRecovery')}</summary>
     <input type="password" autoComplete="off" aria-label={t('codex.credentialSync.recoveryEnrollment')} className="input input-bordered input-sm" value={recoveryEnrollment} placeholder={t('codex.credentialSync.recoveryEnrollment')} onChange={e=>setRecoveryEnrollment(e.target.value)}/>
     <textarea aria-label={t('codex.credentialSync.recoveryCode')} placeholder={t('codex.credentialSync.recoveryCode')} className="textarea textarea-bordered" readOnly={false} value={recoveryCode} onChange={e=>setRecoveryCode(e.target.value)}/>
