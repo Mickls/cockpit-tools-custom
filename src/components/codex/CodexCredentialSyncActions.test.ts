@@ -27,6 +27,8 @@ test('one action handles three abnormal OAuth accounts serially and reports a fa
   const h = loadHookModule(new URL('./CodexCredentialSyncActions.tsx', import.meta.url), {
     'react-i18next': { useTranslation: () => ({ t: (key: string) => key }) },
     './CodexCredentialSyncSettings': { CodexCredentialSyncSettings: () => null },
+    '../../hooks/useModalFocusTrap': { useModalFocusTrap: () => {} },
+    '../../hooks/useEscClose': { useEscCloseTopmost: () => {} },
     '../../types/codex': {
       isCodexAgentIdentityAccount: () => false,
       isCodexApiKeyAccount: (account: { auth_mode?: string }) => account.auth_mode === 'apikey',

@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useModalFocusTrap } from '../../hooks/useModalFocusTrap';
+import { useEscCloseTopmost } from '../../hooks/useEscClose';
+import './CodexCredentialSync.css';
 import { CodexCredentialSyncSettings } from './CodexCredentialSyncSettings';
 import * as sync from '../../services/codexCredentialSyncService';
 import { isCodexAgentIdentityAccount, isCodexApiKeyAccount, isCodexPendingOAuthAccount, isCodexWebSessionAccount, type CodexAccount } from '../../types/codex';
@@ -11,7 +15,7 @@ export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
   refresh: () => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const running = useRef(false);
   const [busy, setBusy] = useState(false);
   const [paired, setPaired] = useState(false);
@@ -22,7 +26,9 @@ export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
     void sync.loadCodexCredentialSyncSettings().then(s => setPaired(s.enabled && s.paired === true)).catch(() => setPaired(false));
   };
   useEffect(refreshAvailability, []);
-  useEffect(() => { if (configOpen) dialog.current?.showModal(); }, [configOpen]);
+  const closeConfig = () => { setConfigOpen(false); refreshAvailability(); };
+  useModalFocusTrap(dialog, configOpen);
+  useEscCloseTopmost(configOpen, closeConfig, dialog);
   const eligible = accounts.filter(a => a.requires_reauth && !isCodexApiKeyAccount(a) &&
     !isCodexAgentIdentityAccount(a) && !isCodexWebSessionAccount(a) && !isCodexPendingOAuthAccount(a));
   const recover = async () => {
@@ -62,15 +68,22 @@ export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
       await refresh();
     }
   };
-  return <section aria-label={t('codex.credentialSync.title')}>
+  return <section className="credential-sync-actions" aria-label={t('codex.credentialSync.title')}>
     <button className="btn btn-secondary btn-sm" onClick={() => setConfigOpen(true)}>{t('codex.credentialSync.title')}</button>
     {paired && (eligible.length > 0 || busy) && <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => void recover()}>
       {t('codex.credentialSync.recoverInvalid', '恢复异常账号')}
     </button>}
-    <dialog ref={dialog} className="modal-content" aria-label={t('codex.credentialSync.title')} onClose={() => { setConfigOpen(false); refreshAvailability(); }}>
-      <button className="modal-close" aria-label={t('common.close', '关闭')} onClick={() => dialog.current?.close()}><X size={18} /></button>
-      {configOpen && <CodexCredentialSyncSettings />}
-    </dialog>
+    {configOpen && createPortal(
+      <div className="modal-overlay credential-sync-overlay">
+        <div ref={dialog} className="modal-content credential-sync-dialog" role="dialog" aria-modal="true"
+          aria-labelledby="credential-sync-dialog-title" tabIndex={-1}>
+          <div className="modal-header">
+            <h2 id="credential-sync-dialog-title">{t('codex.credentialSync.title')}</h2>
+            <button type="button" className="modal-close" aria-label={t('common.close', '关闭')} onClick={closeConfig}><X /></button>
+          </div>
+          <div className="modal-body"><CodexCredentialSyncSettings /></div>
+        </div>
+      </div>, document.body)}
     {error && <p role="alert">{error}</p>}
     {results.length > 0 && <ul aria-live="polite">{results.map(row => {
       const account = accounts.find(a => a.id === row.id);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as sync from '../../services/codexCredentialSyncService';
+import './CodexCredentialSync.css';
 
 type Pairing = { pairing_id: string; device_id: string; public_key: string; box_public_key: string };
 export function CodexCredentialSyncSettings() {
@@ -16,16 +17,17 @@ export function CodexCredentialSyncSettings() {
  useEffect(()=>{void sync.loadCodexCredentialSyncSettings().then(s=>{setSettings(s);setServerDraft(s.serverUrl);}).catch(e=>setError(String(e)));void sync.listCodexCredentialSyncAccounts().then(setAccounts).catch(e=>setError(String(e)));},[]);
  useEffect(()=>{if(!settings.enabled)return;const timer=setInterval(()=>{void refresh().catch(()=>undefined);},5000);return()=>clearInterval(timer);},[settings.enabled]);
  const run=async(operation:()=>Promise<unknown>)=>{if(busy)return;setBusy(true);setError('');setMessage('');try{await operation();const next=await sync.loadCodexCredentialSyncSettings();setSettings(next);setServerDraft(next.serverUrl);}catch(e){setError(String(e));}finally{setBusy(false);}};
- return <div className="settings-row" style={{alignItems:'flex-start'}}>
+ return <div className="settings-row credential-sync-settings">
   <div className="row-label"><div className="row-title">{t('codex.credentialSync.title')}</div><div className="row-desc">{t('codex.credentialSync.desc')}</div></div>
-  <div className="row-control" style={{minWidth:300,display:'flex',flexDirection:'column',alignItems:'stretch',gap:8}}>
-   <div style={{display:'flex',gap:6}}><input aria-label={t('codex.credentialSync.server')} className="input input-bordered input-sm" value={serverDraft} placeholder="https://100.100.1.1:18444" disabled={busy||settings.paired} onChange={e=>setServerDraft(e.target.value)}/><button className="btn btn-sm" disabled={busy||settings.paired} onClick={()=>void run(()=>sync.saveCodexCredentialSyncSettings({...settings,serverUrl:sync.normalizeCodexCredentialSyncUrl(serverDraft)}))}>{t('common.save')}</button></div>
-   <label><input type="checkbox" checked={settings.enabled} disabled={busy||!settings.serverUrl} onChange={e=>void run(()=>sync.saveCodexCredentialSyncSettings({...settings,enabled:e.target.checked}))}/> {t('codex.credentialSync.enable')}</label>
-   <small>{settings.paired?t('codex.credentialSync.paired'):t('codex.credentialSync.unpaired')}</small>
+  <div className="row-control credential-sync-controls">
+   <label className="credential-sync-field-label" htmlFor="credential-sync-server">{t('codex.credentialSync.server')}</label>
+   <div className="credential-sync-field"><input id="credential-sync-server" aria-label={t('codex.credentialSync.server')} className="input input-bordered input-sm" value={serverDraft} placeholder="https://100.100.1.1:18444" disabled={busy||settings.paired} onChange={e=>setServerDraft(e.target.value)}/><button className="btn btn-secondary btn-sm" disabled={busy||settings.paired} onClick={()=>void run(()=>sync.saveCodexCredentialSyncSettings({...settings,serverUrl:sync.normalizeCodexCredentialSyncUrl(serverDraft)}))}>{t('common.save')}</button></div>
+   <div className="credential-sync-state"><label className="credential-sync-toggle"><input type="checkbox" checked={settings.enabled} disabled={busy||!settings.serverUrl} onChange={e=>void run(()=>sync.saveCodexCredentialSyncSettings({...settings,enabled:e.target.checked}))}/> {t('codex.credentialSync.enable')}</label>
+   <span className={settings.paired?'credential-sync-badge is-paired':'credential-sync-badge'}>{settings.paired?t('codex.credentialSync.paired'):t('codex.credentialSync.unpaired')}</span></div>
    {!settings.paired&&<div style={{display:'flex',gap:6}}><input aria-label={t('codex.credentialSync.enrollment')} className="input input-bordered input-sm" value={code} placeholder={t('codex.credentialSync.enrollment')} type="password" autoComplete="off" disabled={busy} onChange={e=>setCode(e.target.value)}/><button className="btn btn-sm" disabled={busy||!code.trim()} onClick={()=>void run(async()=>{await sync.saveCodexCredentialSyncSettings({...settings,serverUrl:sync.normalizeCodexCredentialSyncUrl(serverDraft)});await sync.enrollCodexCredentialSyncDevice(code.trim());setCode('');})}>{t('codex.credentialSync.enroll')}</button></div>}
    {settings.paired&&<>
     <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-      <button className="btn btn-sm" disabled={busy||!settings.enabled} onClick={()=>void run(async()=>setLongCode(await sync.manageCodexCredentialSyncPairingCode()))}>{t('codex.credentialSync.longCode', '获取长期配对码')}</button>
+      <button className="btn btn-primary btn-sm" disabled={busy||!settings.enabled} onClick={()=>void run(async()=>setLongCode(await sync.manageCodexCredentialSyncPairingCode()))}>{t('codex.credentialSync.longCode', '获取长期配对码')}</button>
       <button className="btn btn-sm" disabled={busy||!settings.enabled} onClick={()=>{if(!confirmReplace){setConfirmReplace(true);return;}setConfirmReplace(false);setLongCode('');void run(async()=>setLongCode(await sync.manageCodexCredentialSyncPairingCode(true)));}}>{t(confirmReplace?'codex.credentialSync.confirmReplace':'codex.credentialSync.replaceCode',confirmReplace?'确认更换（旧码将失效）':'更换配对码')}</button>
     </div>
     {longCode&&<div>
