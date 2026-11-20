@@ -5,6 +5,9 @@ import { initReactI18next } from 'react-i18next';
 import zh from '../../src/locales/zh-CN.json';
 import { CodexCredentialSyncActions } from '../../src/components/codex/CodexCredentialSyncActions';
 import '../../src/App.css';
+// Also cover visiting Settings before opening the sync dialog: its global
+// horizontal row styles must not stretch this vertical form.
+import '../../src/pages/settings/Settings.css';
 
 // Synthetic UI fixture: no credentials, local profiles, or real service calls.
 let backgroundClicks = 0;
