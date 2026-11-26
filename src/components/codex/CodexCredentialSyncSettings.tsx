@@ -70,7 +70,7 @@ export function CodexCredentialSyncSettings() {
     <ul className="credential-sync-account-list">
      {accounts.map(account=>{
       const label=sync.syncAccountDisplayName(account);
-      const status=account.requiresReauth?'authError':account.hasQuotaError||!account.usageUpdatedAt?'authUnknown':'authHealthy';
+      const status=account.requiresReauth||account.recoveryEligible?'authError':account.hasQuotaError||!account.usageUpdatedAt?'authUnknown':'authHealthy';
       const result=accountResults[account.id];
       return <li key={account.id} className="credential-sync-account-row" aria-label={label} aria-busy={activeAccount===account.id}>
        <div className="credential-sync-account-info">

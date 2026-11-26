@@ -11,6 +11,7 @@ use std::{fs,path::PathBuf,sync::Mutex};
 pub use sdk::{register as enroll,invite,pairings,approve,finish_pairing,devices,revoke,export_recovery,restore_recovery};
 pub use sdk::manage_long_pairing;
 pub use worker::{start_worker,manual_upload,manual_sync,recover_if_authorized_failure};
+pub use worker::persisted_auth_failure;
 static SETTINGS_LOCK:Mutex<()>=Mutex::new(());
 static DEVICE_LOCK:Mutex<()>=Mutex::new(());
 #[derive(Debug,Clone,Serialize,Deserialize,Default)]

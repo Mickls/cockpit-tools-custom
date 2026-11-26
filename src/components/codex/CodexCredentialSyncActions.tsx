@@ -7,7 +7,8 @@ import { useEscCloseTopmost } from '../../hooks/useEscClose';
 import './CodexCredentialSync.css';
 import { CodexCredentialSyncSettings } from './CodexCredentialSyncSettings';
 import * as sync from '../../services/codexCredentialSyncService';
-import { isCodexAgentIdentityAccount, isCodexApiKeyAccount, isCodexPendingOAuthAccount, isCodexWebSessionAccount, type CodexAccount } from '../../types/codex';
+import type { CodexAccount } from '../../types/codex';
+import { canRecoverCodexCredentials } from '../../utils/codexCredentialRecovery';
 
 export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
   accounts: CodexAccount[];
@@ -19,18 +20,29 @@ export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
   const running = useRef(false);
   const [busy, setBusy] = useState(false);
   const [paired, setPaired] = useState(false);
+  const [nativeRecoveryIds, setNativeRecoveryIds] = useState<Set<string>>(new Set());
   const [configOpen, setConfigOpen] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState<Array<{ id: string; message: string }>>([]);
   const refreshAvailability = () => {
-    void sync.loadCodexCredentialSyncSettings().then(s => setPaired(s.enabled && s.paired === true)).catch(() => setPaired(false));
+    void sync.loadCodexCredentialSyncSettings().then(s => {
+      setPaired(s.enabled && s.paired === true);
+      if (!s.enabled || !s.paired) { setNativeRecoveryIds(new Set()); return; }
+      // Read metadata so a stale account-page snapshot cannot hide the retry action.
+      void sync.listCodexCredentialSyncAccounts().then(items =>
+        setNativeRecoveryIds(new Set(items.filter(item => item.recoveryEligible).map(item => item.id))),
+      ).catch(() => undefined);
+    }).catch(() => setPaired(false));
   };
-  useEffect(refreshAvailability, []);
+  useEffect(() => {
+    refreshAvailability();
+    const timer = setInterval(refreshAvailability, 5000);
+    return () => clearInterval(timer);
+  }, []);
   const closeConfig = () => { setConfigOpen(false); refreshAvailability(); };
   useModalFocusTrap(dialog, configOpen);
   useEscCloseTopmost(configOpen, closeConfig, dialog);
-  const eligible = accounts.filter(a => a.requires_reauth && !isCodexApiKeyAccount(a) &&
-    !isCodexAgentIdentityAccount(a) && !isCodexWebSessionAccount(a) && !isCodexPendingOAuthAccount(a));
+  const eligible = accounts.filter(a => canRecoverCodexCredentials(a) || nativeRecoveryIds.has(a.id));
   const recover = async () => {
     if (running.current) return;
     running.current = true;
@@ -44,8 +56,11 @@ export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
         return;
       }
       const supported = new Set((await sync.listCodexCredentialSyncAccounts()).map(a => a.id));
+      // Keep an explicit retry available even when an external Codex/SSH failure
+      // has not yet reached this account page's health flags.
+      const targets = eligible.length ? eligible : accounts.filter(a => supported.has(a.id));
       // Serial recovery avoids competing for the same helper's short-lived leases.
-      for (const account of eligible) {
+      for (const account of targets) {
         let message = t('codex.credentialSync.exhausted');
         try {
           if (!supported.has(account.id)) {
@@ -70,8 +85,8 @@ export function CodexCredentialSyncActions({ accounts, displayName, refresh }: {
   };
   return <section className="credential-sync-actions" aria-label={t('codex.credentialSync.title')}>
     <button className="btn btn-secondary btn-sm" onClick={() => setConfigOpen(true)}>{t('codex.credentialSync.title')}</button>
-    {paired && (eligible.length > 0 || busy) && <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => void recover()}>
-      {t('codex.credentialSync.recoverInvalid', '恢复异常账号')}
+    {paired && <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => void recover()}>
+      {eligible.length > 0 ? t('codex.credentialSync.recoverInvalid', '恢复异常账号') : t('codex.credentialSync.recover')}
     </button>}
     {configOpen && createPortal(
       <div className="modal-overlay credential-sync-overlay">

@@ -12,6 +12,7 @@ static STARTED:AtomicBool=AtomicBool::new(false);
 static ATTEMPTS:LazyLock<Mutex<HashSet<String>>>=LazyLock::new(||Mutex::new(HashSet::new()));
 static ACTIVE:LazyLock<Mutex<HashSet<String>>>=LazyLock::new(||Mutex::new(HashSet::new()));
 static FLUSH:tokio::sync::Mutex<()>=tokio::sync::Mutex::const_new(());
+static AUTO_SCAN_ACTIVE:AtomicBool=AtomicBool::new(false);
 #[derive(Serialize,Deserialize)]struct Credential { identity:Vec<u8>,tokens:CodexTokens }
 fn fingerprint(a:&CodexAccount)->String{format!("{:x}",Sha256::digest(serde_json::to_vec(&a.tokens).unwrap_or_default()))}
 fn account_key(a:&CodexAccount)->Result<String,String>{Ok(crypto::account_key(&sdk::keys(&sdk::secret()?)?,&accounts::credential_sync_identity(a)?))}
@@ -35,6 +36,7 @@ async fn cycle()->Result<(),String>{
  sdk::call(Method::POST,"/v1/devices/heartbeat",None).await?;
  let _=sdk::devices().await?;
  sdk::sync_rotation().await?;
+ start_pending_recovery_scan();
  assist().await?;
  sdk::refresh_recovery().await?;
  if let Some(pending)=load()?.pending_uploads.first().cloned(){
@@ -67,11 +69,42 @@ pub async fn manual_sync(id:String)->Result<bool,String>{
  recover(&id,false).await
 }
 pub async fn recover_if_authorized_failure(id:&str,error:&str)->bool{
- if !explicit_auth_error(error){return false;}
+ if !explicit_auth_error(error)&&!accounts::load_account(id).as_ref().is_some_and(persisted_auth_failure){return false;}
  recover(id,true).await.unwrap_or(false)
 }
 fn explicit_auth_error(error:&str)->bool{
- let e=error.to_ascii_lowercase();["invalid_grant","refresh_token_expired","refresh_token_invalidated","token_revoked","token_invalidated","missing_refresh_token"].iter().any(|code|e.contains(code))
+ let e=error.to_ascii_lowercase();
+ if ["refresh_token_reused","refresh token has been reused","unsupported_country_region_territory","proxy_",
+  "官方 app-server 返回 invalid_refresh_token"].iter().any(|s|e.contains(s)){return false;}
+ if (e.contains("status=401")||e.contains("401 unauthorized")) &&
+    (e.contains("refresh")||e.contains("刷新")||e.contains("登录授权无效")) &&
+    !["proxy","certificate","tls","ssl"].iter().any(|s|e.contains(s)){return true;}
+ ["invalid_grant","invalid_refresh_token","invalid refresh token","refresh_token_expired","refresh_token_invalidated",
+  "token_revoked","token_invalidated","missing_refresh_token","authentication token has been invalidated",
+  "登录授权已被服务端撤销","登录授权缺少 refresh_token"].iter().any(|code|e.contains(code))
+}
+pub fn persisted_auth_failure(account:&CodexAccount)->bool{
+ if account.reauth_reason.as_deref().is_some_and(|s|s.contains("refresh_token_reused")||s.starts_with("官方 app-server 返回 invalid_refresh_token")){return false;}
+ accounts::credential_sync_identity(account).is_ok() &&
+ (account.reauth_reason.as_deref().is_some_and(explicit_auth_error) ||
+  account.quota_error.as_ref().is_some_and(|error|error.code.as_deref().is_some_and(explicit_auth_error)||explicit_auth_error(&error.message)))
+}
+fn pending_recovery(account:&CodexAccount,attempted:&HashSet<String>)->bool{
+ !attempted.contains(&account.id)&&persisted_auth_failure(account)
+}
+fn start_pending_recovery_scan(){
+ if AUTO_SCAN_ACTIVE.swap(true,Ordering::SeqCst){return;}
+ tauri::async_runtime::spawn(async{
+  struct ScanGuard;impl Drop for ScanGuard{fn drop(&mut self){AUTO_SCAN_ACTIVE.store(false,Ordering::SeqCst);}}
+  let _guard=ScanGuard;
+  for item in accounts::load_account_index().accounts {
+   if !sdk::ready(){break;}
+   let Some(account)=accounts::load_account(&item.id)else{continue};
+   if !ATTEMPTS.lock().map(|ids|pending_recovery(&account,&ids)).unwrap_or(false){continue;}
+   // Separate from heartbeat/assistance: one failed round per account per app launch.
+   let _=recover(&item.id,true).await;
+  }
+ });
 }
 struct Active(String);impl Drop for Active{fn drop(&mut self){if let Ok(mut ids)=ACTIVE.lock(){ids.remove(&self.0);}}}
 async fn recover(id:&str,confirmed_failure:bool)->Result<bool,String>{
@@ -89,7 +122,7 @@ async fn recover_inner(id:&str,confirmed_failure:bool)->Result<bool,String>{
  status(id,"正在检查本机凭据");
  let original=accounts::credential_sync_snapshot(id,true)?;
  // A still-valid access token does not prove a failed refresh token is usable.
- if !confirmed_failure&&!original.requires_reauth&&accounts::credential_sync_probe(&original).await.is_ok(){status(id,"本机已有有效凭据");return Ok(true);}
+ if !confirmed_failure&&!original.requires_reauth&&!persisted_auth_failure(&original)&&accounts::credential_sync_probe(&original).await.is_ok(){status(id,"本机已有有效凭据");return Ok(true);}
  let key=account_key(&original)?;let started=Instant::now();let mut failed=HashSet::new();failed.insert(fingerprint(&original));
  status(id,"正在请求在线设备协助");
  let request=sdk::call(Method::POST,"/v1/recoveries",Some(json!({"account_key":key}))).await?;
@@ -191,4 +224,27 @@ async fn assist()->Result<(),String>{
  }
  Ok(())
 }
-#[cfg(test)]mod tests{use super::*;#[test]fn only_explicit_auth_errors_trigger_recovery(){assert!(explicit_auth_error("invalid_grant"));assert!(explicit_auth_error("token_revoked"));for error in ["401 Unauthorized","403 Forbidden","429 rate limit","500 server error","timeout","proxy failure"]{assert!(!explicit_auth_error(error));}}}
+#[cfg(test)]mod tests{
+ use super::*;
+ #[test]fn only_explicit_auth_errors_trigger_recovery(){
+  for error in ["invalid_grant","token_revoked","invalid_refresh_token","invalid refresh token","authentication token has been invalidated","登录授权缺少 refresh_token","refresh failed status=401"]{assert!(explicit_auth_error(error),"{error}");}
+  for error in ["401 Unauthorized","403 Forbidden","429 rate limit","quota_exceeded","insufficient_quota","500 server error","timeout","proxy failure","refresh_token_reused","unsupported_country_region_territory","refresh proxy failed status=401","官方 app-server 返回 invalid_refresh_token，账号无法切换，请重新授权"]{assert!(!explicit_auth_error(error),"{error}");}
+ }
+ #[test]fn persisted_auth_errors_are_recovered_once_without_a_new_quota_request(){
+  use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+  let jwt=|v:Value|format!("e30.{}.fixture",URL_SAFE_NO_PAD.encode(serde_json::to_vec(&v).unwrap()));
+  let tokens=CodexTokens{id_token:String::new(),access_token:jwt(json!({"sub":"user","https://api.openai.com/auth":{"chatgpt_account_id":"workspace"}})),refresh_token:Some("synthetic".into())};
+  let mut account=CodexAccount::new("test-persisted".into(),"test@example.invalid".into(),tokens);
+  account.account_id=Some("workspace".into());
+  account.quota_error=Some(crate::models::codex::CodexQuotaErrorInfo{code:Some("invalid_refresh_token".into()),message:"expired authorization".into(),timestamp:1});
+  assert!(!account.requires_reauth);
+  let mut attempted=HashSet::new();
+  assert!(pending_recovery(&account,&attempted));
+  attempted.insert(account.id.clone());
+  assert!(!pending_recovery(&account,&attempted));
+  attempted.clear(); // A fresh app launch is a new round.
+  assert!(pending_recovery(&account,&attempted));
+  account.quota_error=None;account.requires_reauth=true;
+  assert!(!pending_recovery(&account,&attempted)); // A stale flag alone is not proof.
+ }
+}
