@@ -28,3 +28,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/release/check-official-upstream.cjs sync
+      - name: Notify the owner of upstream conflicts
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/notify-upstream-conflicts.cjs
