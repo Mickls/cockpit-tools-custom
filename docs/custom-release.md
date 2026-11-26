@@ -1,6 +1,6 @@
 # 构建与发布
 
-在 GitHub 的 **Actions → Desktop Release → Run workflow** 中选择 `custom`，或运行 `gh workflow run custom-release.yml --repo Mickls/cockpit-tools-custom --ref custom`。工作流先检查该提交是否已包含官方最新正式版，再生成 Windows x64、Linux x64、macOS arm64 安装包。推送只触发上游检查，发布仍由维护者手动触发。
+在 GitHub 的 **Actions → Desktop Release → Run workflow** 中选择 `custom`，或运行 `gh workflow run custom-release.yml --repo Mickls/cockpit-tools-custom --ref custom`。工作流先检查该提交是否已包含检查时官方 `main` 的最新提交，再生成 Windows x64、Linux x64、macOS arm64 安装包。推送及每小时的调度只触发上游同步检查，发布仍由维护者手动触发。
 
 ## 签名策略
 

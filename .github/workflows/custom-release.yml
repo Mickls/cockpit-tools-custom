@@ -27,7 +27,7 @@ jobs:
           node-version: 22
       - name: Verify packaging scripts
         run: npm run test:release
-      - name: Require the latest official stable release
+      - name: Require the latest official main commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/release/check-official-upstream.cjs check
