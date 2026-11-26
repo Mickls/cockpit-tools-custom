@@ -24,7 +24,7 @@ fork SHALL 仅将 `main` 和 `custom` 保留为长期远端分支。已合并的
 
 ### Requirement: 无更新时不产生同步变更
 
-维护流程 SHALL 在创建同步变更前比较官方上游版本或提交与 fork 的 `main`。
+维护流程 SHALL 每小时、推送到 `custom` 及手动触发时检查官方 `main`，在创建同步变更前比较其最新提交与本仓库 `main`、`custom`。定时同步 SHALL NOT 触发打包。
 
 #### Scenario: 官方没有更新
 - **WHEN** fork 的 `main` 已包含最新官方版本
@@ -37,6 +37,10 @@ fork SHALL 仅将 `main` 和 `custom` 保留为长期远端分支。已合并的
 #### Scenario: 已有待集成更新
 - **WHEN** `main` 已跟进某个官方更新，但该更新尚未集成到 `custom`
 - **THEN** 流程 SHALL 保留或继续处理已有 PR，不得重复创建，也不得误认为更新已完成
+
+#### Scenario: 已有同步 PR 包含人工修复
+- **WHEN** 官方 main 又有新提交，而待处理同步分支包含无法快进保留的人工修复
+- **THEN** 流程 SHALL 更新上游镜像并报告需人工合并，不强制覆盖同步分支、不创建重复 PR
 
 ### Requirement: 合并与验证门槛
 

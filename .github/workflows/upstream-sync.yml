@@ -1,6 +1,8 @@
 name: Check official upstream
 
 on:
+  schedule:
+    - cron: '17 * * * *'
   push:
     branches: [custom]
   workflow_dispatch: {}
@@ -17,6 +19,7 @@ jobs:
   sync:
     if: github.repository == 'Mickls/cockpit-tools-custom' && github.ref == 'refs/heads/custom'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
