@@ -37,6 +37,7 @@ pub fn codex_credential_sync_accounts()->Vec<serde_json::Value>{
             "id":account.id,"email":account.email,"accountName":account.account_name,
             "planType":account.plan_type,"accountId":account.account_id,
             "requiresReauth":account.requires_reauth,"hasQuotaError":account.quota_error.is_some(),
+            "recoveryEligible":codex_credential_sync::persisted_auth_failure(&account),
             "usageUpdatedAt":account.usage_updated_at
         }))
     }).collect()

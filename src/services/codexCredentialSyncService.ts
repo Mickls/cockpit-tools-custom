@@ -31,6 +31,7 @@ export interface SyncAccount {
   planType?: string | null;
   accountId?: string | null;
   requiresReauth?: boolean;
+  recoveryEligible?: boolean;
   hasQuotaError?: boolean;
   usageUpdatedAt?: number | null;
 }
