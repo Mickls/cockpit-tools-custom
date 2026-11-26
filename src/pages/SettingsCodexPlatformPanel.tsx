@@ -7,6 +7,7 @@ import { CodexQuotaHistorySettings } from '../components/codex/CodexQuotaHistory
 import { AutoSwitchAccountScopeSelector } from '../components/AutoSwitchAccountScopeSelector';
 import { CodexContextManagementControl } from '../components/codex/CodexContextManagementControl';
 import { CodexSshSyncSettingsControl } from '../components/codex/CodexSshSyncSettingsControl';
+import { CodexCredentialSyncSettings } from '../components/codex/CodexCredentialSyncSettings';
 import { SingleSelectDropdown } from '../components/SingleSelectDropdown';
 import './settings/Settings.css';
 import { RefreshCw } from 'lucide-react';
@@ -699,6 +700,7 @@ export function SettingsCodexPlatformPanel(props: SettingsPageViewProps) {
                 </>
               )}
 
+              <CodexCredentialSyncSettings />
               <CodexQuotaRecoverySettings variant="settings-row" />
               <CodexQuotaHistorySettings variant="settings-row" />
 

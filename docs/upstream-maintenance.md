@@ -1,0 +1,15 @@
+# 上游同步与分支维护
+
+## 冲突通知
+
+每次同步后都会检查待处理上游 PR 的可合并状态；同步步骤失败时也会尝试检查。首次发现冲突时，由 `github-actions[bot]` 在 PR 留言并提及 `@Mickls`，触发 GitHub 通知。同一轮冲突每小时不重复提醒；检测到解决后重置，再次冲突时重新提醒。
+
+邮件通过 GitHub 原生通知投递，需在 [通知设置](https://github.com/settings/notifications) 为 Participating, @mentions and custom 启用 Email，并确认该仓库没有被忽略、该讨论没有被取消订阅。工作流成功和 PR 评论可验证通知已发起，但无法证明邮件已经到达收件箱。
+
+新仓库长期保留 `main` 和 `custom`。`main` 跟进官方代码并移除上游的 Actions 定义，`custom` 是默认分支和发布入口。临时 `codex/*` 分支通过 PR 集成，GitHub 会在合并后删除源分支。
+
+「Check official upstream」每小时第 17 分钟运行，也在推送到 `custom` 时触发，并可在 Actions 页面手动运行。定时调度由 GitHub 执行，繁忙时可能延迟。工作流直接读取官方 `main` 最新提交，不再等待正式 Release；比较其是否已包含在本仓库 `main` 和 `custom` 中。没有更新时直接结束；有更新时推进镜像并创建一个同步 PR。已有待处理同步 PR 时，尽可能快进更新同一分支，不重复创建 PR；若该分支含人工冲突修复而不能快进，则报告待处理并保留人工修改，禁止强制覆盖。
+
+同步 PR 保留官方提交的祖先关系。请在本地解决冲突并运行 `npm run typecheck` 和 `npm run test:release`，再用合并提交集成到 `custom`。`main` 不包含活跃工作流，`custom` 仅包含官方同步和手动发布工作流；上游工作流不得进入执行目录。合并触发一次新的同步检查，但不会启动打包。允许仓库的 GitHub Actions 创建 PR，默认令牌权限保持只读。
+
+准备发布时，按[构建与发布](custom-release.md)手动运行 `Desktop Release`。构建前再次检查锁定的源码提交是否含检查当时官方 `main` 的最新提交；未同步时停止，不占用平台打包任务。定时同步不会直接发布安装包，有冲突或验证未通过的 PR 不能作为新版发布。不要将 Token 或签名私钥写入代码、PR 或日志。

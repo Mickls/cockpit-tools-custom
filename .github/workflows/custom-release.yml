@@ -1,0 +1,162 @@
+name: Desktop Release
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custom-packages-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'Mickls/cockpit-tools-custom' && github.ref == 'refs/heads/custom'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.identity.outputs.version }}
+      commit: ${{ steps.identity.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify packaging scripts
+        run: npm run test:release
+      - name: Require the latest official main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/check-official-upstream.cjs check
+      - name: Allocate reproducible custom version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: identity
+        run: node scripts/release/custom-release.cjs identity
+      - uses: actions/upload-artifact@v4
+        with:
+          name: custom-release-identity
+          path: custom-release.json
+          retention-days: 30
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+            platform: macos
+            arch: aarch64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            platform: windows
+            arch: x64
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux
+            arch: amd64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: custom-release-identity
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: custom-release-${{ matrix.target }}
+          workspaces: . -> target
+      - name: Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf pkg-config libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libnm-dev xdg-utils
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Prepare isolated build version
+        run: node scripts/release/custom-release.cjs prepare
+      - name: Build desktop packages
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: '-'
+        run: node scripts/tauri.cjs build --ci --target ${{ matrix.target }}
+      - name: Stage and sign every update format
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          PLATFORM: ${{ matrix.platform }}
+          MAC_ARCH: ${{ matrix.arch }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          node scripts/release/custom-stage.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.target }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve failed build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ matrix.target }}
+          path: |
+            custom-release.json
+            target/${{ matrix.target }}/release/bundle/**/*.log
+            release-assets/*
+          if-no-files-found: ignore
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: custom-package-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: custom-release-identity
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: packages-*
+          path: release-assets
+          merge-multiple: true
+      - name: Verify all platforms, signatures, and build provenance
+        run: |
+          node scripts/release/custom-release.cjs prepare
+          node scripts/release/custom-release.cjs aggregate
+      - name: Preserve complete verified package set
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-release-verified
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish verified release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release/custom-publish.cjs

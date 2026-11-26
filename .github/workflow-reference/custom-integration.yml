@@ -1,0 +1,40 @@
+name: Custom integration checks
+
+on:
+  pull_request:
+    branches:
+      - custom
+  push:
+    branches:
+      - custom
+  workflow_dispatch:
+
+concurrency:
+  group: custom-integration-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Custom regression checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Run release and upstream synchronization tests
+        run: node --test scripts/release/*.test.cjs
+
+      - name: Type check the frontend
+        run: npm run typecheck

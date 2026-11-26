@@ -275,3 +275,4 @@ pub mod buddy_resource_api;
 
 #[path = "../../../crates/cockpit-core/src/modules/qoder_usage.rs"]
 pub mod qoder_usage;
+pub mod codex_credential_sync;

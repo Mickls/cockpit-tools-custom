@@ -80,6 +80,9 @@ fs2 = "0.4"
 ring = "0.17"
 ed25519-dalek = { version = "2.2", features = ["pkcs8", "rand_core"] }
 crypto_box = { version = "0.9.1", features = ["seal", "std"] }
+hkdf = "0.12"
+hmac = "0.12"
+zeroize = { version = "1", features = ["derive"] }
 rsa = "0.9"
 serde_urlencoded = "0.7"
 url = "2.5"

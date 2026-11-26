@@ -25,6 +25,7 @@ include!("codex_account_windows_auth_store.rs");
 include!("codex_account_projection.rs");
 include!("codex_account_runtime_switch.rs");
 include!("codex_account_import.rs");
+include!("codex_account_credential_sync.rs");
 
 #[cfg(test)]
 mod tests {
